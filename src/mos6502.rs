@@ -1,55 +1,55 @@
-pub trait Memory {
-    fn read(&self, address: usize) -> u8;
-    fn write(&mut self, address: usize, value: u8) -> ();
-    fn get_size(&self) -> usize;
+#![allow(dead_code)]
+
+use crate::memory::Bus;
+
+const FLAG_NEGATIVE: u8 = 1 << 0;
+const FLAG_OVERFLOW: u8 = 1 << 1;
+const FLAG_BREAK: u8 = 1 << 3;
+const FLAG_DECIMAL: u8 = 1 << 4;
+const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
+const FLAG_ZERO: u8 = 1 << 6;
+const FLAG_CARRY: u8 = 1 << 7;
+
+type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
+
+enum OpcodeOperand<'a> {
+    Byte(u8),
+    Word(u16),
+    Register(&'a u8),
+    ProgramCounter(&'a u16),
 }
 
-pub struct RAM {
-    size: usize,
-    buffer: Vec<u8>,
+#[derive(Clone, Copy)]
+enum AddressingMode {
+    Accumulator,
+    Absolute,
+    AbsoluteXIndex,
+    AbsoluteYIndex,
+    Immediate,
+    Implied,
+    Indirect,
+    XIndexIndirect,
+    IndirectYIndex,
+    Relative,
+    Zeropage,
+    ZeropageXIndex,
+    ZeropageYIndex,
 }
 
-impl RAM {
-    pub fn new(size: usize) -> RAM {
-        RAM {
-            size,
-            buffer: vec![0; size],
-        }
-    }
-}
-
-impl Memory for RAM {
-    fn read(&self, address: usize) -> u8 {
-        self.buffer[address]
-    }
-    fn write(&mut self, address: usize, value: u8) {
-        self.buffer[address] = value;
-    }
-    fn get_size(&self) -> usize {
-        self.size
-    }
-}
-
-pub const FLAG_NEGATIVE: u8 = 1 << 0;
-pub const FLAG_OVERFLOW: u8 = 1 << 1;
-pub const FLAG_BREAK: u8 = 1 << 3;
-pub const FLAG_DECIMAL: u8 = 1 << 4;
-pub const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
-pub const FLAG_ZERO: u8 = 1 << 6;
-pub const FLAG_CARRY: u8 = 1 << 7;
-
-pub struct MOS6502<'a, M: Memory> {
+pub struct MOS6502<'a, T: Bus> {
     a: u8,
     x: u8,
     y: u8,
-    pc: usize,
     sp: u8,
     sr: u8,
-    mem: &'a M,
+    pc: u16,
+    cycles: u128,
+    bus: &'a T,
+    opcode_vec: Vec<(OpcodeFunction<'a, T>, AddressingMode)>,
 }
 
-impl<'a, M: Memory> MOS6502<'a, M> {
-    pub fn new(mem: &'a mut M) -> MOS6502<'a, M> {
+impl<'a, T: Bus + Clone> MOS6502<'a, T> {
+    pub fn new(bus: &'a mut T) -> MOS6502<'a, T> {
         MOS6502 {
             a: 0,
             x: 0,
@@ -57,13 +57,35 @@ impl<'a, M: Memory> MOS6502<'a, M> {
             pc: 0,
             sp: 0,
             sr: 0,
-            mem,
+            cycles: 0,
+            bus,
+            opcode_vec: vec![(MOS6502::not_implemented, AddressingMode::Implied); 256],
         }
     }
 
-    pub fn run(&mut self, mem: &'a mut M) {
+    pub fn set_pc(&mut self, value: u16) {
+        self.pc = value;
+    }
+
+    pub fn get_cycles(&self) -> u128 {
+        self.cycles
+    }
+
+    pub fn run(&mut self) {
+        let mut opc: u8;
         loop {
-            break;
+            opc = self.bus.bus_read(self.pc);
+            let (opcode_func, address_mode) = self.opcode_vec[opc as usize];
+            opcode_func(self, address_mode);
+        }
+    }
+
+    pub fn run_for_cycles(&mut self, cycles: u128) {
+        let mut opc: u8;
+        while self.cycles < cycles {
+            opc = self.bus.bus_read(self.pc);
+            let (opcode_func, address_mode) = self.opcode_vec[opc as usize];
+            opcode_func(self, address_mode);
         }
     }
 
@@ -71,16 +93,107 @@ impl<'a, M: Memory> MOS6502<'a, M> {
         self.sr & f != 0
     }
 
-    fn flag_set(&mut self, f: u8) {
-        self.sr |= f;
+    fn status_set(&mut self, f: u8, value: bool) {
+        if value {
+            self.sr |= f; // set flag
+        } else {
+            self.sr &= !f; // clear flag
+        }
     }
 
-    fn flag_clear(&mut self, f: u8) {
-        self.sr &= !f;
-    }
+    // load value into accumulator
+    fn lda(&mut self, address_mode: AddressingMode) {
+        self.a = match self.resolve_operand(address_mode) {
+            OpcodeOperand::Byte(b) => b,
+            OpcodeOperand::Register(r) => *r,
+            _ => {
+                panic!("Invalid addressing mode for LDA");
+            }
+        };
 
-    fn lda(&mut self) {
+        self.status_set(FLAG_ZERO, self.a == 0);
+        self.status_set(FLAG_NEGATIVE, self.a & 0b10000000 != 0);
+
         self.pc += 1;
-        self.a = self.mem.read(self.pc);
+        self.cycles += 1;
+    }
+
+    // add to accumulator with carry
+    fn adc(&mut self, address_mode: AddressingMode) {
+        let a_oldvalue = self.a;
+        self.a += match self.resolve_operand(address_mode) {
+            OpcodeOperand::Byte(b) => self.bus.bus_read(b as u16),
+            OpcodeOperand::Word(w) => self.bus.bus_read(w),
+            _ => {
+                panic!("Invalid addressing mode for ADC");
+            }
+        };
+        self.status_set(FLAG_OVERFLOW, self.a < a_oldvalue);
+    }
+
+    fn not_implemented(&mut self, _: AddressingMode) {
+        panic!("Opcode not implemented.\n");
+    }
+
+    // given some addressing mode, returns operand and increases cpu cycles appropriately
+    fn resolve_operand(&mut self, address_mode: AddressingMode) -> OpcodeOperand {
+        match address_mode {
+            AddressingMode::Accumulator => {
+                self.cycles += 1;
+                OpcodeOperand::Register(&self.a)
+            }
+            AddressingMode::Absolute => {
+                self.pc += 1;
+                let low_byte = self.bus.bus_read(self.pc) as u16;
+                self.pc += 1;
+                let high_byte = self.bus.bus_read(self.pc) as u16;
+                let addr: u16 = (high_byte << 8) | low_byte;
+                OpcodeOperand::Byte(self.bus.bus_read(addr))
+            }
+            AddressingMode::AbsoluteXIndex => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::AbsoluteYIndex => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::Immediate => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::Implied => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::Indirect => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::XIndexIndirect => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::IndirectYIndex => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::Relative => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::Zeropage => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::ZeropageXIndex => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+            AddressingMode::ZeropageYIndex => {
+                self.pc += 1;
+                OpcodeOperand::Byte(0x00)
+            }
+        }
     }
 }
