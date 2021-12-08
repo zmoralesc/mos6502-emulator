@@ -12,11 +12,9 @@ const FLAG_CARRY: u8 = 1 << 7;
 
 type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
 
-enum OpcodeOperand<'a> {
+enum OpcodeOperand {
     Byte(u8),
     Word(u16),
-    Register(&'a u8),
-    ProgramCounter(&'a u16),
 }
 
 #[derive(Clone, Copy)]
@@ -106,7 +104,6 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         let (operand, new_cycles) = self.resolve_operand(address_mode);
         self.a = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Register(r) => *r,
             _ => {
                 panic!("Invalid addressing mode for LDA");
             }
@@ -125,7 +122,6 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         let (operand, new_cycles) = self.resolve_operand(address_mode);
         self.a += match operand {
             OpcodeOperand::Byte(b) => self.bus.bus_read(b as u16),
-            OpcodeOperand::Word(w) => self.bus.bus_read(w),
             _ => {
                 panic!("Invalid addressing mode for ADC");
             }
@@ -141,57 +137,62 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
 
     // given some addressing mode, returns operand and number of additional CPU cycles
     fn resolve_operand(&mut self, address_mode: AddressingMode) -> (OpcodeOperand, u8) {
+        let new_cycles;
         match address_mode {
-            AddressingMode::Accumulator => (OpcodeOperand::Register(&self.a), 1),
+            AddressingMode::Accumulator => {
+                new_cycles = 1;
+                (OpcodeOperand::Byte(self.a), new_cycles)
+            }
             AddressingMode::Absolute => {
+                new_cycles = 2;
                 let low_byte = self.bus.bus_read(self.pc) as u16;
                 let high_byte = self.bus.bus_read(self.pc) as u16;
                 let addr: u16 = (high_byte << 8) | low_byte;
-                (OpcodeOperand::Byte(self.bus.bus_read(addr)), 2)
+                (OpcodeOperand::Byte(self.bus.bus_read(addr)), new_cycles)
             }
             AddressingMode::AbsoluteXIndex => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::AbsoluteYIndex => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::Immediate => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::Implied => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::Indirect => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::XIndexIndirect => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::IndirectYIndex => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::Relative => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::Zeropage => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::ZeropageXIndex => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
             AddressingMode::ZeropageYIndex => {
-                self.pc += 1;
-                (OpcodeOperand::Byte(0x00), 1)
+                new_cycles = 1;
+                (OpcodeOperand::Byte(0x00), new_cycles)
             }
         }
     }
