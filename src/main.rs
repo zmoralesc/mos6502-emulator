@@ -1,8 +1,8 @@
 mod memory;
 mod mos6502;
 
-use memory::{Bus, RAM};
-use mos6502::MOS6502;
+use memory::RAM;
+use mos6502::{Bus, MOS6502};
 
 fn main() {
     let mut ram = RAM::new(1024 * 64);

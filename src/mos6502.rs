@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
-use crate::memory::Bus;
+pub trait Bus {
+    fn bus_read(&self, address: u16) -> u8;
+    fn bus_write(&mut self, address: u16, value: u8);
+    fn get_size(&self) -> usize;
+}
 
 const FLAG_NEGATIVE: u8 = 1 << 0;
 const FLAG_OVERFLOW: u8 = 1 << 1;

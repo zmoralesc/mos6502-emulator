@@ -1,10 +1,6 @@
 #![allow(dead_code)]
 
-pub trait Bus {
-    fn bus_read(&self, address: u16) -> u8;
-    fn bus_write(&mut self, address: u16, value: u8);
-    fn get_size(&self) -> usize;
-}
+use crate::mos6502::Bus;
 
 #[derive(Clone)]
 pub struct RAM {
