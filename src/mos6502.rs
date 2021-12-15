@@ -216,8 +216,19 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 (OpcodeOperand::NA, 0)
             }
             AddressingMode::Indirect => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                new_cycles = 2;
+
+                self.pc += 1;
+                let mut low_byte: u8 = self.bus.bus_read(self.pc);
+                self.pc += 1;
+                let mut high_byte: u8 = self.bus.bus_read(self.pc);
+
+                let addr = u16::from_le_bytes([low_byte, high_byte]);
+
+                low_byte = self.bus.bus_read(addr);
+                high_byte = self.bus.bus_read(addr + 1);
+
+                (OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte])), new_cycles)
             }
             AddressingMode::XIndexIndirect => {
                 new_cycles = 1;
