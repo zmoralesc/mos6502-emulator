@@ -6,8 +6,8 @@ use mos6502::{Bus, MOS6502};
 
 fn main() {
     let mut ram = RAM::new(1024 * 64);
-    ram.bus_write(0xFFFC, 0xA9);
-    ram.bus_write(0xFFFD, 0xA1);
+    ram.write(0xFFFC, 0xA9);
+    ram.write(0xFFFD, 0xA1);
 
     let mut cpu = MOS6502::new(&mut ram);
     cpu.set_pc(0xFFFC);

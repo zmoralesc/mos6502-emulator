@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 pub trait Bus {
-    fn bus_read(&self, address: u16) -> u8;
-    fn bus_write(&mut self, address: u16, value: u8);
+    fn read(&self, address: u16) -> u8;
+    fn write(&mut self, address: u16, value: u8);
     fn get_size(&self) -> usize;
 }
 
@@ -19,7 +19,7 @@ type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
 enum OpcodeOperand {
     Byte(u8),
     Word(u16),
-    NA
+    NA,
 }
 
 #[derive(Clone, Copy)]
@@ -77,7 +77,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
     pub fn run(&mut self) {
         let mut opc: u8;
         loop {
-            opc = self.bus.bus_read(self.pc);
+            opc = self.bus.read(self.pc);
             let (opcode_func, address_mode) = self.opcode_vec[opc as usize];
             opcode_func(self, address_mode);
         }
@@ -86,7 +86,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
     pub fn run_for_cycles(&mut self, cycles: u128) {
         let mut opc: u8;
         while self.cycles < cycles {
-            opc = self.bus.bus_read(self.pc);
+            opc = self.bus.read(self.pc);
             let (opcode_func, address_mode) = self.opcode_vec[opc as usize];
             opcode_func(self, address_mode);
         }
@@ -106,7 +106,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
 
     // load value into accumulator
     fn lda(&mut self, address_mode: AddressingMode) {
-        let (operand, new_cycles) = self.resolve_operand(address_mode);
+        let operand = self.resolve_operand(address_mode);
         self.a = match operand {
             OpcodeOperand::Byte(b) => b,
             _ => {
@@ -118,20 +118,18 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         self.status_set(FLAG_NEGATIVE, self.a & 0b10000000 != 0);
 
         self.pc += 1;
-        self.cycles += 1 + new_cycles;
     }
 
     // add to accumulator with carry
     fn adc(&mut self, address_mode: AddressingMode) {
         let a_oldvalue = self.a;
-        let (operand, new_cycles) = self.resolve_operand(address_mode);
+        let operand = self.resolve_operand(address_mode);
         self.a += match operand {
-            OpcodeOperand::Byte(b) => self.bus.bus_read(b as u16),
+            OpcodeOperand::Byte(b) => self.bus.read(b as u16),
             _ => {
                 panic!("Invalid addressing mode for ADC");
             }
         };
-        self.cycles += new_cycles;
         if self.flag_check(FLAG_CARRY) {
             self.a += 1;
         }
@@ -142,117 +140,109 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         panic!("Opcode not implemented.\n");
     }
 
-    // given some addressing mode, returns operand and number of additional CPU cycles
-    fn resolve_operand(&mut self, address_mode: AddressingMode) -> (OpcodeOperand, u128) {
-        let mut new_cycles: u128;
+    // given some addressing mode, returns operand and increases CPU cycles as appropriate
+    fn resolve_operand(&mut self, address_mode: AddressingMode) -> OpcodeOperand {
         match address_mode {
             AddressingMode::Accumulator => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(self.a), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(self.a)
             }
             AddressingMode::Absolute => {
-                new_cycles = 2;
-
                 self.pc += 1;
-                let low_byte: u8 = self.bus.bus_read(self.pc);
+                let low_byte: u8 = self.bus.read(self.pc);
                 self.pc += 1;
-                let high_byte: u8 = self.bus.bus_read(self.pc);
+                let high_byte: u8 = self.bus.read(self.pc);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
-                (OpcodeOperand::Byte(self.bus.bus_read(addr)), new_cycles)
+                self.cycles += 2;
+                OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::AbsoluteXIndex => {
-                new_cycles = 2;
-
                 self.pc += 1;
-                let low_byte: u8 = self.bus.bus_read(self.pc);
+                let low_byte: u8 = self.bus.read(self.pc);
                 self.pc += 1;
-                let high_byte: u8 = self.bus.bus_read(self.pc);
+                let high_byte: u8 = self.bus.read(self.pc);
 
                 let mut addr = u16::from_le_bytes([low_byte, high_byte]) + self.x as u16;
 
+                self.cycles += 2;
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr += 1;
                     // add one more cycle if page boundaries were crossed
                     if old_addr & 0xFF00 != addr & 0xFF00 {
-                        new_cycles += 1;
+                        self.cycles += 1;
                     }
                 }
 
-                (OpcodeOperand::Byte(self.bus.bus_read(addr)), new_cycles)
+                OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::AbsoluteYIndex => {
-                new_cycles = 2;
-
                 self.pc += 1;
-                let low_byte: u8 = self.bus.bus_read(self.pc);
+                let low_byte: u8 = self.bus.read(self.pc);
                 self.pc += 1;
-                let high_byte: u8 = self.bus.bus_read(self.pc);
+                let high_byte: u8 = self.bus.read(self.pc);
 
                 let mut addr = u16::from_le_bytes([low_byte, high_byte]) + self.y as u16;
 
+                self.cycles += 2;
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr += 1;
                     // add one more cycle if page boundaries were crossed
                     if old_addr & 0xFF00 != addr & 0xFF00 {
-                        new_cycles += 1;
+                        self.cycles += 1;
                     }
                 }
 
-                (OpcodeOperand::Byte(self.bus.bus_read(addr)), new_cycles)
+                OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::Immediate => {
-                new_cycles = 1;
-
                 self.pc += 1;
-                let byte: u8 = self.bus.bus_read(self.pc);
+                let byte: u8 = self.bus.read(self.pc);
 
-                (OpcodeOperand::Byte(byte), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(byte)
             }
-            AddressingMode::Implied => {
-                (OpcodeOperand::NA, 0)
-            }
+            AddressingMode::Implied => OpcodeOperand::NA,
             AddressingMode::Indirect => {
-                new_cycles = 2;
-
                 self.pc += 1;
-                let mut low_byte: u8 = self.bus.bus_read(self.pc);
+                let mut low_byte: u8 = self.bus.read(self.pc);
                 self.pc += 1;
-                let mut high_byte: u8 = self.bus.bus_read(self.pc);
+                let mut high_byte: u8 = self.bus.read(self.pc);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
-                low_byte = self.bus.bus_read(addr);
-                high_byte = self.bus.bus_read(addr + 1);
+                low_byte = self.bus.read(addr);
+                high_byte = self.bus.read(addr + 1);
 
-                (OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte])), new_cycles)
+                self.cycles += 2;
+                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::XIndexIndirect => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
             AddressingMode::IndirectYIndex => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
             AddressingMode::Relative => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
             AddressingMode::Zeropage => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
             AddressingMode::ZeropageXIndex => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
             AddressingMode::ZeropageYIndex => {
-                new_cycles = 1;
-                (OpcodeOperand::Byte(0x00), new_cycles)
+                self.cycles += 1;
+                OpcodeOperand::Byte(0x00)
             }
         }
     }
