@@ -19,7 +19,7 @@ type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
 enum OpcodeOperand {
     Byte(u8),
     Word(u16),
-    NA,
+    None,
 }
 
 #[derive(Clone, Copy)]
@@ -205,7 +205,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 self.cycles += 1;
                 OpcodeOperand::Byte(byte)
             }
-            AddressingMode::Implied => OpcodeOperand::NA,
+            AddressingMode::Implied => OpcodeOperand::None,
             AddressingMode::Indirect => {
                 self.pc += 1;
                 let mut low_byte: u8 = self.bus.read(self.pc);
@@ -221,12 +221,26 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::XIndexIndirect => {
-                self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+                self.pc += 1;
+                let mut zp_addr: u16 = self.bus.read(self.pc) as u16;
+
+                zp_addr += self.x as u16;
+
+                let low_byte = self.bus.read(zp_addr);
+                let high_byte = self.bus.read(zp_addr + 1);
+
+                self.cycles += 6;
+                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::IndirectYIndex => {
-                self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+                self.pc += 1;
+                let zp_addr: u16 = self.bus.read(self.pc) as u16;
+
+                let low_byte = self.bus.read(zp_addr);
+                let high_byte = self.bus.read(zp_addr + 1);
+
+                self.cycles += 6;
+                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]) + self.y as u16)
             }
             AddressingMode::Relative => {
                 self.cycles += 1;
