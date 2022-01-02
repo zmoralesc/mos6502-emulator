@@ -246,21 +246,32 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 self.pc += 1;
                 let offset = self.bus.read(self.pc) as i16;
 
-                let addr: i16 = self.pc as i16 + offset;
+                let addr: u16 = if offset < 0 {
+                    self.pc - offset.abs() as u16
+                } else {
+                    self.pc + offset.abs() as u16
+                };
 
                 OpcodeOperand::Word(addr as u16)
             }
             AddressingMode::Zeropage => {
+                self.pc += 1;
                 self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+
+                let zp_addr = self.bus.read(self.pc);
+                OpcodeOperand::Byte(zp_addr & 0x0F)
             }
             AddressingMode::ZeropageXIndex => {
+                self.pc += 1;
                 self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+
+                OpcodeOperand::Byte(self.bus.read(self.pc) + self.x)
             }
             AddressingMode::ZeropageYIndex => {
+                self.pc += 1;
                 self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+
+                OpcodeOperand::Byte(self.bus.read(self.pc) + self.y)
             }
         }
     }
