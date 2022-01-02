@@ -243,8 +243,12 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]) + self.y as u16)
             }
             AddressingMode::Relative => {
-                self.cycles += 1;
-                OpcodeOperand::Byte(0x00)
+                self.pc += 1;
+                let offset = self.bus.read(self.pc) as i16;
+
+                let addr: i16 = self.pc as i16 + offset;
+
+                OpcodeOperand::Word(addr as u16)
             }
             AddressingMode::Zeropage => {
                 self.cycles += 1;
