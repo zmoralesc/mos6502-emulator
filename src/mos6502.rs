@@ -96,7 +96,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         self.sr & f != 0
     }
 
-    fn status_set(&mut self, f: u8, value: bool) {
+    fn flag_toggle(&mut self, f: u8, value: bool) {
         if value {
             self.sr |= f; // set flag
         } else {
@@ -114,8 +114,8 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
             }
         };
 
-        self.status_set(FLAG_ZERO, self.a == 0);
-        self.status_set(FLAG_NEGATIVE, self.a & 0b10000000 != 0);
+        self.flag_toggle(FLAG_ZERO, self.a == 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.a & 0b10000000 != 0);
 
         self.pc += 1;
     }
@@ -133,7 +133,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
         if self.flag_check(FLAG_CARRY) {
             self.a += 1;
         }
-        self.status_set(FLAG_OVERFLOW, self.a < a_oldvalue);
+        self.flag_toggle(FLAG_OVERFLOW, self.a < a_oldvalue);
     }
 
     fn not_implemented(&mut self, _: AddressingMode) {
