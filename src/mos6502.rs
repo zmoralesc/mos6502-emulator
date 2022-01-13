@@ -18,7 +18,7 @@ type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
 
 enum OpcodeOperand {
     Byte(u8),
-    Word(u16),
+    Address(u16),
     None,
 }
 
@@ -156,7 +156,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
                 self.cycles += 2;
-                OpcodeOperand::Word(addr)
+                OpcodeOperand::Address(addr)
             }
             AddressingMode::AbsoluteXIndex => {
                 self.pc += 1;
@@ -218,7 +218,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 high_byte = self.bus.read(addr + 1);
 
                 self.cycles += 2;
-                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
+                OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::XIndexIndirect => {
                 self.pc += 1;
@@ -230,7 +230,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 let high_byte = self.bus.read(zp_addr + 1);
 
                 self.cycles += 6;
-                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
+                OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::IndirectYIndex => {
                 self.pc += 1;
@@ -240,7 +240,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 let high_byte = self.bus.read(zp_addr + 1);
 
                 self.cycles += 6;
-                OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]) + self.y as u16)
+                OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]) + self.y as u16)
             }
             AddressingMode::Relative => {
                 self.pc += 1;
@@ -252,14 +252,14 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                     self.pc + offset.abs() as u16
                 };
 
-                OpcodeOperand::Word(addr as u16)
+                OpcodeOperand::Address(addr as u16)
             }
             AddressingMode::Zeropage => {
                 self.pc += 1;
                 self.cycles += 1;
 
                 let zp_addr = self.bus.read(self.pc) as u16;
-                OpcodeOperand::Word(zp_addr)
+                OpcodeOperand::Address(zp_addr)
             }
             AddressingMode::ZeropageXIndex => {
                 self.pc += 1;
@@ -269,7 +269,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 let zp_addr = self.bus.read(self.pc) as u16;
                 let addr: u16 = zp_addr + offset;
 
-                OpcodeOperand::Word(addr)
+                OpcodeOperand::Address(addr)
             }
             AddressingMode::ZeropageYIndex => {
                 self.pc += 1;
@@ -279,7 +279,7 @@ impl<'a, T: Bus + Clone> MOS6502<'a, T> {
                 let zp_addr = self.bus.read(self.pc) as u16;
                 let addr: u16 = zp_addr + offset;
 
-                OpcodeOperand::Word(addr)
+                OpcodeOperand::Address(addr)
             }
         }
     }
