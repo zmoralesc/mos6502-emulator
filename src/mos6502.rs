@@ -14,7 +14,7 @@ const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
 const FLAG_ZERO: u8 = 1 << 6;
 const FLAG_CARRY: u8 = 1 << 7;
 
-type OpcodeFunction<'a, T> = fn(&mut MOS6502<'a, T>, AddressingMode);
+type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode);
 
 enum OpcodeOperand {
     Byte(u8),
@@ -39,7 +39,7 @@ enum AddressingMode {
     ZeropageYIndex,
 }
 
-pub struct MOS6502<'a, T: Bus> {
+pub struct MOS6502<T: Bus> {
     a: u8,
     x: u8,
     y: u8,
@@ -47,12 +47,12 @@ pub struct MOS6502<'a, T: Bus> {
     sr: u8,
     pc: u16,
     cycles: u128,
-    bus: &'a T,
-    opcode_vec: Vec<(OpcodeFunction<'a, T>, AddressingMode)>,
+    bus: Box<T>,
+    opcode_vec: Vec<(OpcodeFunction<T>, AddressingMode)>,
 }
 
-impl<'a, T: Bus + Clone> MOS6502<'a, T> {
-    pub fn new(bus: &'a mut T) -> MOS6502<'a, T> {
+impl<T: Bus + Clone> MOS6502<T> {
+    pub fn new(bus: Box<T>) -> MOS6502<T> {
         MOS6502 {
             a: 0,
             x: 0,
