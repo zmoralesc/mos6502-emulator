@@ -5,7 +5,7 @@ use memory::RAM;
 use mos6502::{Bus, MOS6502};
 
 fn main() {
-    let mut ram = Box::new(RAM::new(1024 * 64));
+    let mut ram = RAM::new(1024 * 64);
     ram.write(0xFFFC, 0xA9);
     ram.write(0xFFFD, 0xA1);
 
