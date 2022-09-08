@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
 pub trait Bus {
+    /// Read byte from bus
     fn read(&self, address: u16) -> u8;
+    /// Write byte to bus
     fn write(&mut self, address: u16, value: u8);
+    /// Get bus size in bytes
     fn get_size(&self) -> usize;
 }
 
@@ -52,6 +55,7 @@ pub struct MOS6502<T: Bus> {
 }
 
 impl<T: Bus> MOS6502<T> {
+    /// Create new instance of MOS6502
     pub fn new(bus: T) -> MOS6502<T> {
         MOS6502 {
             a: 0,
@@ -323,14 +327,17 @@ impl<T: Bus> MOS6502<T> {
         }
     }
 
+    /// Change value of program counter
     pub fn set_pc(&mut self, value: u16) {
         self.pc = value;
     }
 
+    /// Return current number of elapsed CPU cycles
     pub fn get_cycles(&self) -> u128 {
         self.cycles
     }
 
+    /// Start CPU
     pub fn run(&mut self) {
         let mut opc: u8;
         loop {
@@ -340,6 +347,7 @@ impl<T: Bus> MOS6502<T> {
         }
     }
 
+    // Run CPU for a number of cycles
     pub fn run_for_cycles(&mut self, cycles: u128) {
         let mut opc: u8;
         while self.cycles < cycles {
@@ -349,10 +357,12 @@ impl<T: Bus> MOS6502<T> {
         }
     }
 
-    pub fn flag_check(&mut self, f: u8) -> bool {
+    /// Check if specified flag is set
+    pub fn flag_check(&self, f: u8) -> bool {
         self.sr & f != 0
     }
 
+    /// Turn specified flag on/off
     fn flag_toggle(&mut self, f: u8, value: bool) {
         if value {
             self.sr |= f; // set flag
@@ -397,7 +407,7 @@ impl<T: Bus> MOS6502<T> {
         panic!("Opcode not implemented.\n");
     }
 
-    // given some addressing mode, returns operand and increases CPU cycles as appropriate
+    /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
     fn resolve_operand(&mut self, address_mode: AddressingMode) -> OpcodeOperand {
         match address_mode {
             AddressingMode::Accumulator => {
