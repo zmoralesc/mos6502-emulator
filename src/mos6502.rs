@@ -396,6 +396,27 @@ impl<T: Bus> MOS6502<T> {
         self.program_counter += 1;
     }
 
+    // load value into X register
+    fn ldx(&mut self, address_mode: AddressingMode) {
+        self.cycles += 1;
+        let operand = self.resolve_operand(address_mode);
+        self.x_register = match operand {
+            OpcodeOperand::Byte(b) => b,
+            OpcodeOperand::Address(addr) => {
+                self.cycles += if addr <= 0xFF { 1 } else { 2 };
+                self.bus.read(addr)
+            }
+            _ => {
+                panic!("Invalid addressing mode for LDX");
+            }
+        };
+
+        self.flag_toggle(FLAG_ZERO, self.x_register == 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.x_register & 0b10000000 != 0);
+
+        self.program_counter += 1;
+    }
+
     // add to accumulator with carry
     fn adc(&mut self, address_mode: AddressingMode) {
         let a_oldvalue = self.accumulator;
