@@ -332,7 +332,7 @@ impl<T: Bus> MOS6502<T> {
         self.program_counter = value;
     }
 
-    /// Return current number of elapsed CPU cycles
+    /// Return number of elapsed CPU cycles
     pub fn get_cycles(&self) -> u128 {
         self.cycles
     }
