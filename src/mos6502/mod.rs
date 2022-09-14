@@ -227,37 +227,37 @@ impl<T: Bus> MOS6502<T> {
                 (MOS6502::not_implemented, AddressingMode::Implied), // 9D
                 (MOS6502::not_implemented, AddressingMode::Implied), // 9E
                 (MOS6502::not_implemented, AddressingMode::Implied), // 9F
-                (MOS6502::not_implemented, AddressingMode::Implied), // A0
-                (MOS6502::not_implemented, AddressingMode::Implied), // A1
-                (MOS6502::not_implemented, AddressingMode::Implied), // A2
+                (MOS6502::ldy, AddressingMode::Immediate),           // A0
+                (MOS6502::lda, AddressingMode::XIndexIndirect),      // A1
+                (MOS6502::ldx, AddressingMode::Immediate),           // A2
                 (MOS6502::not_implemented, AddressingMode::Implied), // A3
-                (MOS6502::not_implemented, AddressingMode::Implied), // A4
+                (MOS6502::ldy, AddressingMode::Zeropage),            // A4
                 (MOS6502::lda, AddressingMode::Zeropage),            // A5
-                (MOS6502::not_implemented, AddressingMode::Implied), // A6
+                (MOS6502::ldx, AddressingMode::Zeropage),            // A6
                 (MOS6502::not_implemented, AddressingMode::Implied), // A7
                 (MOS6502::not_implemented, AddressingMode::Implied), // A8
                 (MOS6502::lda, AddressingMode::Immediate),           // A9
                 (MOS6502::not_implemented, AddressingMode::Implied), // AA
                 (MOS6502::not_implemented, AddressingMode::Implied), // AB
-                (MOS6502::not_implemented, AddressingMode::Implied), // AC
-                (MOS6502::not_implemented, AddressingMode::Implied), // AD
-                (MOS6502::not_implemented, AddressingMode::Implied), // AE
+                (MOS6502::ldy, AddressingMode::Absolute),            // AC
+                (MOS6502::lda, AddressingMode::Absolute),            // AD
+                (MOS6502::ldx, AddressingMode::Absolute),            // AE
                 (MOS6502::not_implemented, AddressingMode::Implied), // AF
                 (MOS6502::not_implemented, AddressingMode::Implied), // B0
-                (MOS6502::not_implemented, AddressingMode::Implied), // B1
+                (MOS6502::lda, AddressingMode::IndirectYIndex),      // B1
                 (MOS6502::not_implemented, AddressingMode::Implied), // B2
                 (MOS6502::not_implemented, AddressingMode::Implied), // B3
-                (MOS6502::not_implemented, AddressingMode::Implied), // B4
+                (MOS6502::ldy, AddressingMode::ZeropageXIndex),      // B4
                 (MOS6502::lda, AddressingMode::ZeropageXIndex),      // B5
-                (MOS6502::not_implemented, AddressingMode::Implied), // B6
+                (MOS6502::ldx, AddressingMode::ZeropageYIndex),      // B6
                 (MOS6502::not_implemented, AddressingMode::Implied), // B7
                 (MOS6502::not_implemented, AddressingMode::Implied), // B8
-                (MOS6502::not_implemented, AddressingMode::Implied), // B9
+                (MOS6502::lda, AddressingMode::AbsoluteYIndex),      // B9
                 (MOS6502::not_implemented, AddressingMode::Implied), // BA
                 (MOS6502::not_implemented, AddressingMode::Implied), // BB
-                (MOS6502::not_implemented, AddressingMode::Implied), // BC
-                (MOS6502::not_implemented, AddressingMode::Implied), // BD
-                (MOS6502::not_implemented, AddressingMode::Implied), // BE
+                (MOS6502::ldy, AddressingMode::AbsoluteXIndex),      // BC
+                (MOS6502::lda, AddressingMode::AbsoluteXIndex),      // BD
+                (MOS6502::ldx, AddressingMode::AbsoluteYIndex),      // BE
                 (MOS6502::not_implemented, AddressingMode::Implied), // BF
                 (MOS6502::not_implemented, AddressingMode::Implied), // C0
                 (MOS6502::not_implemented, AddressingMode::Implied), // C1
@@ -366,6 +366,14 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator
     }
 
+    pub fn get_x_register(&self) -> u8 {
+        self.x_register
+    }
+
+    pub fn get_y_register(&self) -> u8 {
+        self.y_register
+    }
+
     /// Turn specified flag on/off
     fn flag_toggle(&mut self, f: u8, value: bool) {
         if value {
@@ -381,10 +389,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.accumulator = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => {
-                self.cycles += if addr <= 0xFF { 1 } else { 2 };
-                self.bus.read(addr)
-            }
+            OpcodeOperand::Address(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDA");
             }
@@ -402,10 +407,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.x_register = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => {
-                self.cycles += if addr <= 0xFF { 1 } else { 2 };
-                self.bus.read(addr)
-            }
+            OpcodeOperand::Address(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDX");
             }
@@ -413,6 +415,24 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & 0b10000000 != 0);
+
+        self.program_counter += 1;
+    }
+
+    // load value into Y register
+    fn ldy(&mut self, address_mode: AddressingMode) {
+        self.cycles += 1;
+        let operand = self.resolve_operand(address_mode);
+        self.y_register = match operand {
+            OpcodeOperand::Byte(b) => b,
+            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            _ => {
+                panic!("Invalid addressing mode for LDY");
+            }
+        };
+
+        self.flag_toggle(FLAG_ZERO, self.y_register == 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.y_register & 0b10000000 != 0);
 
         self.program_counter += 1;
     }
