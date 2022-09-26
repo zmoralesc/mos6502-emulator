@@ -357,6 +357,10 @@ impl<T: Bus> MOS6502<T> {
         }
     }
 
+    pub fn get_bus(&mut self) -> &mut impl Bus {
+        &mut self.bus
+    }
+
     /// Check if specified flag is set
     pub fn flag_check(&self, f: u8) -> bool {
         self.status_register & f != 0
