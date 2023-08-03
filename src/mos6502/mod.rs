@@ -569,13 +569,9 @@ impl<T: Bus> MOS6502<T> {
                 self.program_counter = self.program_counter.wrapping_add(1);
                 let offset = self.bus.read(self.program_counter) as i16;
 
-                let addr: u16 = if offset < 0 {
-                    self.program_counter - offset.abs() as u16
-                } else {
-                    self.program_counter + offset.abs() as u16
-                };
+                let addr: u16 = self.program_counter.wrapping_add_signed(offset);
 
-                OpcodeOperand::Address(addr as u16)
+                OpcodeOperand::Address(addr)
             }
             AddressingMode::Zeropage => {
                 self.program_counter = self.program_counter.wrapping_add(1);

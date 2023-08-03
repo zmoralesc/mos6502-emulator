@@ -3,21 +3,21 @@
 use crate::mos6502::Bus;
 
 #[derive(Clone)]
-pub struct RAM {
+pub struct Ram {
     size: usize,
     buffer: Vec<u8>,
 }
 
-impl RAM {
-    pub fn new(size: usize) -> RAM {
-        RAM {
+impl Ram {
+    pub fn new(size: usize) -> Ram {
+        Ram {
             size,
             buffer: vec![0; size],
         }
     }
 }
 
-impl Bus for RAM {
+impl Bus for Ram {
     fn read(&self, address: u16) -> u8 {
         self.buffer[address as usize]
     }

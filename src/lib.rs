@@ -3,7 +3,7 @@
 mod memory;
 mod mos6502;
 
-use memory::RAM;
+use memory::Ram;
 use mos6502::{Bus, MOS6502};
 
 #[cfg(test)]
@@ -16,7 +16,7 @@ mod tests {
         let x_value: u8 = 0xee;
         let cycles_to_run = 2;
 
-        let ram = RAM::new(1024 * 64);
+        let ram = Ram::new(1024 * 64);
         let mut cpu = MOS6502::new(ram);
 
         let bus: &mut dyn Bus = cpu.get_bus();
@@ -38,7 +38,7 @@ mod tests {
         let offset = 0x02;
         let cycles_to_run = 4;
 
-        let ram = RAM::new(1024 * 64);
+        let ram = Ram::new(1024 * 64);
         let mut cpu = MOS6502::new(ram);
 
         let bus: &mut dyn Bus = cpu.get_bus();
