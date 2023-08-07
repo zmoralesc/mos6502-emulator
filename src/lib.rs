@@ -19,15 +19,15 @@ mod tests {
         let ram = Ram::new(1024 * 64);
         let mut cpu = MOS6502::new(ram);
 
-        let bus: &mut dyn Bus = cpu.get_bus();
+        let bus: &mut dyn Bus = cpu.bus();
 
-        bus.write(program_start, 0xa2); // LDX opcode, immediate addressing mode
+        bus.write(program_start, 0xa2);
         bus.write(program_start + 1, x_value);
 
         cpu.set_program_counter(program_start);
         cpu.run_for_cycles(cycles_to_run);
-        assert_eq!(cpu.get_cycles(), cycles_to_run);
-        assert_eq!(cpu.get_x_register(), x_value);
+        assert_eq!(cpu.cycles(), cycles_to_run);
+        assert_eq!(cpu.x_register(), x_value);
     }
 
     #[test]
@@ -41,20 +41,20 @@ mod tests {
         let ram = Ram::new(1024 * 64);
         let mut cpu = MOS6502::new(ram);
 
-        let bus: &mut dyn Bus = cpu.get_bus();
+        let bus: &mut dyn Bus = cpu.bus();
 
-        bus.write(program_start, 0xa2); // LDX opcode, immediate addressing mode
+        bus.write(program_start, 0xa2);
         bus.write(program_start + 1, offset);
 
         bus.write(zp_addr as u16 + offset as u16, acc_value);
 
-        bus.write(program_start + 2, 0xb5); // LDA opcode, zeropage-index addressing mode
+        bus.write(program_start + 2, 0xb5);
         bus.write(program_start + 3, zp_addr);
 
         cpu.set_program_counter(program_start);
         cpu.run_for_cycles(cycles_to_run);
-        assert_eq!(cpu.get_cycles(), cycles_to_run);
-        assert_eq!(cpu.get_accumulator(), acc_value);
-        assert_eq!(cpu.get_x_register(), offset);
+        assert_eq!(cpu.cycles(), cycles_to_run);
+        assert_eq!(cpu.accumulator(), acc_value);
+        assert_eq!(cpu.x_register(), offset);
     }
 }
