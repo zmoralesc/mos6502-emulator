@@ -9,7 +9,7 @@ pub trait Bus {
     /// Write byte to bus
     fn write(&mut self, address: u16, value: u8);
     /// Get bus size in bytes
-    fn get_size(&self) -> usize;
+    fn size(&self) -> usize;
 }
 
 const FLAG_NEGATIVE: u8 = 1 << 0;
@@ -20,7 +20,8 @@ const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
 const FLAG_ZERO: u8 = 1 << 6;
 const FLAG_CARRY: u8 = 1 << 7;
 
-const NEGATIVE_BIT: u8 = 0b10000000;
+const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
+const SIGN_BIT_MASK: u8 = 0b10000000;
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode);
 
@@ -501,13 +502,16 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::Relative => {
                 self.program_counter = self.program_counter.wrapping_add(1);
-                let offset = self.bus.read(self.program_counter);
+                let offset_byte = self.bus.read(self.program_counter);
 
-                let addr: u16 = if (offset & NEGATIVE_BIT) == 0 {
-                    self.program_counter.wrapping_add(offset as u16)
+                let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
+                let is_negative = offset_byte & SIGN_BIT_MASK != 0;
+
+                let addr: u16 = if !is_negative {
+                    self.program_counter.wrapping_add(offset_magnitude as u16)
                 } else {
                     self.program_counter
-                        .wrapping_add((offset as u16).wrapping_neg())
+                        .wrapping_add((offset_magnitude as u16).wrapping_neg())
                 };
 
                 OpcodeOperand::Address(addr)

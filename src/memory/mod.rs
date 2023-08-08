@@ -26,7 +26,7 @@ impl Bus for Ram {
         self.buffer[address as usize] = value;
     }
 
-    fn get_size(&self) -> usize {
+    fn size(&self) -> usize {
         self.size
     }
 }

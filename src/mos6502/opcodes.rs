@@ -14,7 +14,7 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & SIGN_BIT_MASK != 0);
 
         self.program_counter = self.program_counter.wrapping_add(1);
     }
@@ -32,7 +32,7 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.x_register & SIGN_BIT_MASK != 0);
 
         self.program_counter = self.program_counter.wrapping_add(1);
     }
@@ -50,14 +50,14 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.y_register & SIGN_BIT_MASK != 0);
 
         self.program_counter = self.program_counter.wrapping_add(1);
     }
 
     // add to accumulator with carry
     pub(super) fn adc(&mut self, address_mode: AddressingMode) {
-        let a_oldvalue = self.accumulator;
+        let old_value = self.accumulator;
         let operand = self.resolve_operand(address_mode);
         let value = match operand {
             OpcodeOperand::Byte(b) => self.bus.read(b as u16),
@@ -66,15 +66,19 @@ impl<T: Bus> MOS6502<T> {
             }
         };
 
+        let sign_bits_match: bool = ((self.accumulator ^ value) & SIGN_BIT_MASK) == 0;
+
         self.accumulator = self
             .accumulator
             .wrapping_add(value)
             .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
 
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT != 0);
+        let overflow: bool = sign_bits_match && ((self.accumulator ^ value) & SIGN_BIT_MASK) != 0;
+
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & SIGN_BIT_MASK != 0);
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_CARRY, self.accumulator < a_oldvalue);
-        self.flag_toggle(FLAG_OVERFLOW, true);
+        self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
+        self.flag_toggle(FLAG_OVERFLOW, overflow);
     }
 
     pub(super) fn not_implemented(&mut self, _: AddressingMode) {
