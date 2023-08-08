@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-mod opcodes;
-use self::opcodes::*;
+mod arithmetic_ops;
+mod transfer_ops;
 
 pub trait Bus {
     /// Read byte from bus
