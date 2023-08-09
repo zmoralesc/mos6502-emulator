@@ -53,8 +53,4 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
         self.flag_toggle(FLAG_OVERFLOW, overflow);
     }
-
-    pub(super) fn not_implemented(&mut self, _: AddressingMode) {
-        panic!("Opcode not implemented.")
-    }
 }

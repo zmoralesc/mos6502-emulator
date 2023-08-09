@@ -85,7 +85,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Byte(b) => b as u16,
             OpcodeOperand::Word(addr) => addr,
             _ => {
-                panic!("Invalid addressing mode for STX");
+                panic!("Invalid addressing mode for STY");
             }
         };
         self.bus.write(addr, self.y_register);

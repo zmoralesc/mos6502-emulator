@@ -335,6 +335,10 @@ impl<T: Bus> MOS6502<T> {
         }
     }
 
+    fn not_implemented(&mut self, _: AddressingMode) {
+        panic!("Opcode not implemented.")
+    }
+
     /// Change value of program counter
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
