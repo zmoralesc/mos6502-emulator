@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.accumulator = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Word(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDA");
             }
@@ -23,7 +23,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.x_register = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Word(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDX");
             }
@@ -39,7 +39,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.y_register = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Word(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDY");
             }
@@ -55,7 +55,7 @@ impl<T: Bus> MOS6502<T> {
         self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Byte(b) => b as u16,
-            OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::Word(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STA");
             }
@@ -69,7 +69,7 @@ impl<T: Bus> MOS6502<T> {
         self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Byte(b) => b as u16,
-            OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::Word(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STX");
             }
@@ -83,7 +83,7 @@ impl<T: Bus> MOS6502<T> {
         self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Byte(b) => b as u16,
-            OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::Word(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STX");
             }
