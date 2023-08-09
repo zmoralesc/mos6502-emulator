@@ -20,6 +20,8 @@ pub const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
 pub const FLAG_ZERO: u8 = 1 << 6;
 pub const FLAG_CARRY: u8 = 1 << 7;
 
+const STACK_BASE: u16 = 0x0100;
+
 const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
 const SIGN_BIT_MASK: u8 = 0b10000000;
 
@@ -323,13 +325,13 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // FF
         ];
         MOS6502 {
-            accumulator: u8::default(),
-            x_register: u8::default(),
-            y_register: u8::default(),
-            program_counter: u16::default(),
-            stack_pointer: u8::default(),
-            status_register: u8::default(),
-            cycles: u128::default(),
+            accumulator: 0x00,
+            x_register: 0x00,
+            y_register: 0x00,
+            program_counter: 0x00,
+            stack_pointer: 0xFF,
+            status_register: 0x00,
+            cycles: 0x00,
             bus,
             opcode_array,
         }
@@ -356,7 +358,7 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
-            self.increment_pc(1);
+            self.increment_program_counter(1);
         }
     }
 
@@ -367,7 +369,7 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
-            self.increment_pc(1);
+            self.increment_program_counter(1);
         }
     }
 
@@ -392,7 +394,7 @@ impl<T: Bus> MOS6502<T> {
         self.y_register
     }
 
-    fn increment_pc(&mut self, n: u16) {
+    fn increment_program_counter(&mut self, n: u16) {
         self.program_counter = self.program_counter.wrapping_add(n);
     }
 
@@ -417,9 +419,9 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Byte(self.accumulator)
             }
             AddressingMode::Absolute => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
@@ -428,9 +430,9 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(addr)
             }
             AddressingMode::AbsoluteXIndex => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let mut addr =
@@ -447,9 +449,9 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::AbsoluteYIndex => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let mut addr =
@@ -466,7 +468,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::Immediate => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let byte: u8 = self.bus.read(self.program_counter);
 
                 self.increment_cycles(1);
@@ -474,9 +476,9 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::Implied => OpcodeOperand::None,
             AddressingMode::Indirect => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let mut low_byte: u8 = self.bus.read(self.program_counter);
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let mut high_byte: u8 = self.bus.read(self.program_counter);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
@@ -488,7 +490,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::XIndexIndirect => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let mut zp_addr: u8 = self.bus.read(self.program_counter);
 
                 zp_addr = zp_addr.wrapping_add(self.x_register);
@@ -500,7 +502,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::IndirectYIndex => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let zp_addr = self.bus.read(self.program_counter);
 
                 let low_byte = self.bus.read(zp_addr as u16);
@@ -512,7 +514,7 @@ impl<T: Bus> MOS6502<T> {
                 )
             }
             AddressingMode::Relative => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 let offset_byte = self.bus.read(self.program_counter);
 
                 let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
@@ -528,7 +530,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(addr)
             }
             AddressingMode::Zeropage => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 self.increment_cycles(1);
 
                 let zp_addr = self.bus.read(self.program_counter);
@@ -536,7 +538,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(zp_addr as u16)
             }
             AddressingMode::ZeropageXIndex => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 self.increment_cycles(1);
 
                 let offset = self.x_register;
@@ -549,7 +551,7 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Word(addr as u16)
             }
             AddressingMode::ZeropageYIndex => {
-                self.increment_pc(1);
+                self.increment_program_counter(1);
                 self.increment_cycles(1);
 
                 let offset = self.y_register;
