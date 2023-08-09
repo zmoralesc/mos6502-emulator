@@ -12,18 +12,19 @@ pub trait Bus {
     fn size(&self) -> usize;
 }
 
-const FLAG_NEGATIVE: u8 = 1 << 0;
-const FLAG_OVERFLOW: u8 = 1 << 1;
-const FLAG_BREAK: u8 = 1 << 3;
-const FLAG_DECIMAL: u8 = 1 << 4;
-const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
-const FLAG_ZERO: u8 = 1 << 6;
-const FLAG_CARRY: u8 = 1 << 7;
+pub const FLAG_NEGATIVE: u8 = 1 << 0;
+pub const FLAG_OVERFLOW: u8 = 1 << 1;
+pub const FLAG_BREAK: u8 = 1 << 3;
+pub const FLAG_DECIMAL: u8 = 1 << 4;
+pub const FLAG_NO_INTERRUPTS: u8 = 1 << 5;
+pub const FLAG_ZERO: u8 = 1 << 6;
+pub const FLAG_CARRY: u8 = 1 << 7;
 
 const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
 const SIGN_BIT_MASK: u8 = 0b10000000;
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode);
+type OpcodeFunctionArray<T> = [(OpcodeFunction<T>, AddressingMode); 256];
 
 enum OpcodeOperand {
     Byte(u8),
@@ -57,13 +58,13 @@ pub struct MOS6502<T: Bus> {
     program_counter: u16,
     cycles: u128,
     bus: T,
-    opcode_array: [(OpcodeFunction<T>, AddressingMode); 256],
+    opcode_array: OpcodeFunctionArray<T>,
 }
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
     pub fn new(bus: T) -> MOS6502<T> {
-        let opcode_array: [(OpcodeFunction<T>, AddressingMode); 256] = [
+        let opcode_array: OpcodeFunctionArray<T> = [
             (MOS6502::not_implemented, AddressingMode::Implied), // 00
             (MOS6502::not_implemented, AddressingMode::Implied), // 01
             (MOS6502::not_implemented, AddressingMode::Implied), // 02
@@ -161,35 +162,35 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 5E
             (MOS6502::not_implemented, AddressingMode::Implied), // 5F
             (MOS6502::not_implemented, AddressingMode::Implied), // 60
-            (MOS6502::not_implemented, AddressingMode::Implied), // 61
+            (MOS6502::adc, AddressingMode::XIndexIndirect),      // 61
             (MOS6502::not_implemented, AddressingMode::Implied), // 62
             (MOS6502::not_implemented, AddressingMode::Implied), // 63
             (MOS6502::not_implemented, AddressingMode::Implied), // 64
-            (MOS6502::not_implemented, AddressingMode::Implied), // 65
+            (MOS6502::adc, AddressingMode::Zeropage),            // 65
             (MOS6502::not_implemented, AddressingMode::Implied), // 66
             (MOS6502::not_implemented, AddressingMode::Implied), // 67
             (MOS6502::not_implemented, AddressingMode::Implied), // 68
-            (MOS6502::not_implemented, AddressingMode::Implied), // 69
+            (MOS6502::adc, AddressingMode::Immediate),           // 69
             (MOS6502::not_implemented, AddressingMode::Implied), // 6A
             (MOS6502::not_implemented, AddressingMode::Implied), // 6B
             (MOS6502::not_implemented, AddressingMode::Implied), // 6C
-            (MOS6502::not_implemented, AddressingMode::Implied), // 6D
+            (MOS6502::adc, AddressingMode::Absolute),            // 6D
             (MOS6502::not_implemented, AddressingMode::Implied), // 6E
             (MOS6502::not_implemented, AddressingMode::Implied), // 6F
             (MOS6502::not_implemented, AddressingMode::Implied), // 70
-            (MOS6502::not_implemented, AddressingMode::Implied), // 71
+            (MOS6502::adc, AddressingMode::IndirectYIndex),      // 71
             (MOS6502::not_implemented, AddressingMode::Implied), // 72
             (MOS6502::not_implemented, AddressingMode::Implied), // 73
             (MOS6502::not_implemented, AddressingMode::Implied), // 74
-            (MOS6502::not_implemented, AddressingMode::Implied), // 75
+            (MOS6502::adc, AddressingMode::ZeropageXIndex),      // 75
             (MOS6502::not_implemented, AddressingMode::Implied), // 76
             (MOS6502::not_implemented, AddressingMode::Implied), // 77
             (MOS6502::not_implemented, AddressingMode::Implied), // 78
-            (MOS6502::not_implemented, AddressingMode::Implied), // 79
+            (MOS6502::adc, AddressingMode::AbsoluteYIndex),      // 79
             (MOS6502::not_implemented, AddressingMode::Implied), // 7A
             (MOS6502::not_implemented, AddressingMode::Implied), // 7B
             (MOS6502::not_implemented, AddressingMode::Implied), // 7C
-            (MOS6502::not_implemented, AddressingMode::Implied), // 7D
+            (MOS6502::adc, AddressingMode::AbsoluteXIndex),      // 7D
             (MOS6502::not_implemented, AddressingMode::Implied), // 7E
             (MOS6502::not_implemented, AddressingMode::Implied), // 7F
             (MOS6502::not_implemented, AddressingMode::Implied), // 80
@@ -202,7 +203,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 87
             (MOS6502::not_implemented, AddressingMode::Implied), // 88
             (MOS6502::not_implemented, AddressingMode::Implied), // 89
-            (MOS6502::not_implemented, AddressingMode::Implied), // 8A
+            (MOS6502::txa, AddressingMode::Implied),             // 8A
             (MOS6502::not_implemented, AddressingMode::Implied), // 8B
             (MOS6502::not_implemented, AddressingMode::Implied), // 8C
             (MOS6502::not_implemented, AddressingMode::Implied), // 8D
@@ -289,35 +290,35 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // DE
             (MOS6502::not_implemented, AddressingMode::Implied), // DF
             (MOS6502::not_implemented, AddressingMode::Implied), // E0
-            (MOS6502::not_implemented, AddressingMode::Implied), // E1
+            (MOS6502::sbc, AddressingMode::XIndexIndirect),      // E1
             (MOS6502::not_implemented, AddressingMode::Implied), // E2
             (MOS6502::not_implemented, AddressingMode::Implied), // E3
             (MOS6502::not_implemented, AddressingMode::Implied), // E4
-            (MOS6502::not_implemented, AddressingMode::Implied), // E5
+            (MOS6502::sbc, AddressingMode::Zeropage),            // E5
             (MOS6502::not_implemented, AddressingMode::Implied), // E6
             (MOS6502::not_implemented, AddressingMode::Implied), // E7
             (MOS6502::not_implemented, AddressingMode::Implied), // E8
-            (MOS6502::not_implemented, AddressingMode::Implied), // E9
+            (MOS6502::sbc, AddressingMode::Immediate),           // E9
             (MOS6502::not_implemented, AddressingMode::Implied), // EA
             (MOS6502::not_implemented, AddressingMode::Implied), // EB
             (MOS6502::not_implemented, AddressingMode::Implied), // EC
-            (MOS6502::not_implemented, AddressingMode::Implied), // ED
+            (MOS6502::sbc, AddressingMode::Absolute),            // ED
             (MOS6502::not_implemented, AddressingMode::Implied), // EE
             (MOS6502::not_implemented, AddressingMode::Implied), // EF
             (MOS6502::not_implemented, AddressingMode::Implied), // F0
-            (MOS6502::not_implemented, AddressingMode::Implied), // F1
+            (MOS6502::sbc, AddressingMode::IndirectYIndex),      // F1
             (MOS6502::not_implemented, AddressingMode::Implied), // F2
             (MOS6502::not_implemented, AddressingMode::Implied), // F3
             (MOS6502::not_implemented, AddressingMode::Implied), // F4
-            (MOS6502::not_implemented, AddressingMode::Implied), // F5
+            (MOS6502::sbc, AddressingMode::ZeropageXIndex),      // F5
             (MOS6502::not_implemented, AddressingMode::Implied), // F6
             (MOS6502::not_implemented, AddressingMode::Implied), // F7
             (MOS6502::not_implemented, AddressingMode::Implied), // F8
-            (MOS6502::not_implemented, AddressingMode::Implied), // F9
+            (MOS6502::sbc, AddressingMode::AbsoluteYIndex),      // F9
             (MOS6502::not_implemented, AddressingMode::Implied), // FA
             (MOS6502::not_implemented, AddressingMode::Implied), // FB
             (MOS6502::not_implemented, AddressingMode::Implied), // FC
-            (MOS6502::not_implemented, AddressingMode::Implied), // FD
+            (MOS6502::sbc, AddressingMode::AbsoluteXIndex),      // FD
             (MOS6502::not_implemented, AddressingMode::Implied), // FE
             (MOS6502::not_implemented, AddressingMode::Implied), // FF
         ];
@@ -351,6 +352,7 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
+            self.increment_pc(1);
         }
     }
 
@@ -361,6 +363,7 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
+            self.increment_pc(1);
         }
     }
 
@@ -385,6 +388,14 @@ impl<T: Bus> MOS6502<T> {
         self.y_register
     }
 
+    fn increment_pc(&mut self, n: u16) {
+        self.program_counter = self.program_counter.wrapping_add(n);
+    }
+
+    fn increment_cycles(&mut self, n: u128) {
+        self.cycles = self.cycles.wrapping_add(n);
+    }
+
     /// Turn specified flag on/off
     fn flag_toggle(&mut self, f: u8, value: bool) {
         if value {
@@ -398,74 +409,70 @@ impl<T: Bus> MOS6502<T> {
     fn resolve_operand(&mut self, address_mode: AddressingMode) -> OpcodeOperand {
         match address_mode {
             AddressingMode::Accumulator => {
-                self.cycles = self.cycles.wrapping_add(1);
+                self.increment_cycles(1);
                 OpcodeOperand::Byte(self.accumulator)
             }
             AddressingMode::Absolute => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
-                self.cycles = self.cycles.wrapping_add(2);
+                self.increment_cycles(2);
                 OpcodeOperand::Address(addr)
             }
             AddressingMode::AbsoluteXIndex => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.x_register as u16);
 
-                self.cycles = self.cycles.wrapping_add(2);
+                self.increment_cycles(2);
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr = addr.wrapping_add(1);
                     // add one more cycle if page boundaries were crossed
-                    self.cycles = self
-                        .cycles
-                        .wrapping_add((old_addr & 0xFF00 != addr & 0xFF00) as u128);
+                    self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::AbsoluteYIndex => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let low_byte: u8 = self.bus.read(self.program_counter);
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let high_byte: u8 = self.bus.read(self.program_counter);
 
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16);
 
-                self.cycles = self.cycles.wrapping_add(2);
+                self.increment_cycles(2);
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr = addr.wrapping_add(1);
                     // add one more cycle if page boundaries were crossed
-                    if old_addr & 0xFF00 != addr & 0xFF00 {
-                        self.cycles = self.cycles.wrapping_add(1);
-                    }
+                    self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::Immediate => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let byte: u8 = self.bus.read(self.program_counter);
 
-                self.cycles = self.cycles.wrapping_add(1);
+                self.increment_cycles(1);
                 OpcodeOperand::Byte(byte)
             }
             AddressingMode::Implied => OpcodeOperand::None,
             AddressingMode::Indirect => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let mut low_byte: u8 = self.bus.read(self.program_counter);
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let mut high_byte: u8 = self.bus.read(self.program_counter);
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
@@ -473,11 +480,11 @@ impl<T: Bus> MOS6502<T> {
                 low_byte = self.bus.read(addr);
                 high_byte = self.bus.read(addr.wrapping_add(1));
 
-                self.cycles = self.cycles.wrapping_add(2);
+                self.increment_cycles(2);
                 OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::XIndexIndirect => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let mut zp_addr: u8 = self.bus.read(self.program_counter);
 
                 zp_addr = zp_addr.wrapping_add(self.x_register);
@@ -485,23 +492,23 @@ impl<T: Bus> MOS6502<T> {
                 let low_byte = self.bus.read(zp_addr as u16);
                 let high_byte = self.bus.read(zp_addr.wrapping_add(1) as u16);
 
-                self.cycles = self.cycles.wrapping_add(6);
+                self.increment_cycles(6);
                 OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
             }
             AddressingMode::IndirectYIndex => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let zp_addr = self.bus.read(self.program_counter);
 
                 let low_byte = self.bus.read(zp_addr as u16);
                 let high_byte = self.bus.read(zp_addr.wrapping_add(1) as u16);
 
-                self.cycles = self.cycles.wrapping_add(6);
+                self.increment_cycles(6);
                 OpcodeOperand::Address(
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16),
                 )
             }
             AddressingMode::Relative => {
-                self.program_counter = self.program_counter.wrapping_add(1);
+                self.increment_pc(1);
                 let offset_byte = self.bus.read(self.program_counter);
 
                 let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
@@ -517,29 +524,36 @@ impl<T: Bus> MOS6502<T> {
                 OpcodeOperand::Address(addr)
             }
             AddressingMode::Zeropage => {
-                self.program_counter = self.program_counter.wrapping_add(1);
-                self.cycles = self.cycles.wrapping_add(1);
+                self.increment_pc(1);
+                self.increment_cycles(1);
 
                 let zp_addr = self.bus.read(self.program_counter);
+                self.increment_cycles(1);
                 OpcodeOperand::Address(zp_addr as u16)
             }
             AddressingMode::ZeropageXIndex => {
-                self.program_counter = self.program_counter.wrapping_add(1);
-                self.cycles = self.cycles.wrapping_add(1);
+                self.increment_pc(1);
+                self.increment_cycles(1);
 
                 let offset = self.x_register;
                 let zp_addr = self.bus.read(self.program_counter);
+                self.increment_cycles(1);
+
                 let addr = zp_addr.wrapping_add(offset);
+                self.increment_cycles(1);
 
                 OpcodeOperand::Address(addr as u16)
             }
             AddressingMode::ZeropageYIndex => {
-                self.program_counter = self.program_counter.wrapping_add(1);
-                self.cycles = self.cycles.wrapping_add(1);
+                self.increment_pc(1);
+                self.increment_cycles(1);
 
                 let offset = self.y_register;
                 let zp_addr = self.bus.read(self.program_counter);
+                self.increment_cycles(1);
+
                 let addr = zp_addr.wrapping_add(offset);
+                self.increment_cycles(1);
 
                 OpcodeOperand::Address(addr as u16)
             }
