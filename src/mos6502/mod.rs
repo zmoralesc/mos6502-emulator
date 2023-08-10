@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 
 mod arithmetic_ops;
+mod dec_and_inc_ops;
+mod stack_ops;
 mod transfer_ops;
+mod logical_ops;
 
 pub trait Bus {
     /// Read byte from bus
@@ -75,7 +78,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 05
             (MOS6502::not_implemented, AddressingMode::Implied), // 06
             (MOS6502::not_implemented, AddressingMode::Implied), // 07
-            (MOS6502::not_implemented, AddressingMode::Implied), // 08
+            (MOS6502::php, AddressingMode::Implied),             // 08
             (MOS6502::not_implemented, AddressingMode::Implied), // 09
             (MOS6502::not_implemented, AddressingMode::Implied), // 0A
             (MOS6502::not_implemented, AddressingMode::Implied), // 0B
@@ -107,7 +110,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 25
             (MOS6502::not_implemented, AddressingMode::Implied), // 26
             (MOS6502::not_implemented, AddressingMode::Implied), // 27
-            (MOS6502::not_implemented, AddressingMode::Implied), // 28
+            (MOS6502::plp, AddressingMode::Implied),             // 28
             (MOS6502::not_implemented, AddressingMode::Implied), // 29
             (MOS6502::not_implemented, AddressingMode::Implied), // 2A
             (MOS6502::not_implemented, AddressingMode::Implied), // 2B
@@ -139,7 +142,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 45
             (MOS6502::not_implemented, AddressingMode::Implied), // 46
             (MOS6502::not_implemented, AddressingMode::Implied), // 47
-            (MOS6502::not_implemented, AddressingMode::Implied), // 48
+            (MOS6502::pha, AddressingMode::Implied),             // 48
             (MOS6502::not_implemented, AddressingMode::Implied), // 49
             (MOS6502::not_implemented, AddressingMode::Implied), // 4A
             (MOS6502::not_implemented, AddressingMode::Implied), // 4B
@@ -171,7 +174,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::adc, AddressingMode::Zeropage),            // 65
             (MOS6502::not_implemented, AddressingMode::Implied), // 66
             (MOS6502::not_implemented, AddressingMode::Implied), // 67
-            (MOS6502::not_implemented, AddressingMode::Implied), // 68
+            (MOS6502::pla, AddressingMode::Implied),             // 68
             (MOS6502::adc, AddressingMode::Immediate),           // 69
             (MOS6502::not_implemented, AddressingMode::Implied), // 6A
             (MOS6502::not_implemented, AddressingMode::Implied), // 6B
@@ -203,7 +206,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // 85
             (MOS6502::not_implemented, AddressingMode::Implied), // 86
             (MOS6502::not_implemented, AddressingMode::Implied), // 87
-            (MOS6502::not_implemented, AddressingMode::Implied), // 88
+            (MOS6502::dey, AddressingMode::Implied),             // 88
             (MOS6502::not_implemented, AddressingMode::Implied), // 89
             (MOS6502::txa, AddressingMode::Implied),             // 8A
             (MOS6502::not_implemented, AddressingMode::Implied), // 8B
@@ -265,15 +268,15 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // C3
             (MOS6502::not_implemented, AddressingMode::Implied), // C4
             (MOS6502::not_implemented, AddressingMode::Implied), // C5
-            (MOS6502::not_implemented, AddressingMode::Implied), // C6
+            (MOS6502::dec, AddressingMode::Zeropage),            // C6
             (MOS6502::not_implemented, AddressingMode::Implied), // C7
-            (MOS6502::not_implemented, AddressingMode::Implied), // C8
+            (MOS6502::iny, AddressingMode::Implied),             // C8
             (MOS6502::not_implemented, AddressingMode::Implied), // C9
-            (MOS6502::not_implemented, AddressingMode::Implied), // CA
+            (MOS6502::dex, AddressingMode::Implied),             // CA
             (MOS6502::not_implemented, AddressingMode::Implied), // CB
             (MOS6502::not_implemented, AddressingMode::Implied), // CC
             (MOS6502::not_implemented, AddressingMode::Implied), // CD
-            (MOS6502::not_implemented, AddressingMode::Implied), // CE
+            (MOS6502::dec, AddressingMode::Absolute),            // CE
             (MOS6502::not_implemented, AddressingMode::Implied), // CF
             (MOS6502::not_implemented, AddressingMode::Implied), // D0
             (MOS6502::not_implemented, AddressingMode::Implied), // D1
@@ -281,7 +284,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // D3
             (MOS6502::not_implemented, AddressingMode::Implied), // D4
             (MOS6502::not_implemented, AddressingMode::Implied), // D5
-            (MOS6502::not_implemented, AddressingMode::Implied), // D6
+            (MOS6502::dec, AddressingMode::ZeropageXIndex),      // D6
             (MOS6502::not_implemented, AddressingMode::Implied), // D7
             (MOS6502::not_implemented, AddressingMode::Implied), // D8
             (MOS6502::not_implemented, AddressingMode::Implied), // D9
@@ -289,7 +292,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // DB
             (MOS6502::not_implemented, AddressingMode::Implied), // DC
             (MOS6502::not_implemented, AddressingMode::Implied), // DD
-            (MOS6502::not_implemented, AddressingMode::Implied), // DE
+            (MOS6502::dec, AddressingMode::AbsoluteXIndex),      // DE
             (MOS6502::not_implemented, AddressingMode::Implied), // DF
             (MOS6502::not_implemented, AddressingMode::Implied), // E0
             (MOS6502::sbc, AddressingMode::XIndexIndirect),      // E1
@@ -297,15 +300,15 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // E3
             (MOS6502::not_implemented, AddressingMode::Implied), // E4
             (MOS6502::sbc, AddressingMode::Zeropage),            // E5
-            (MOS6502::not_implemented, AddressingMode::Implied), // E6
+            (MOS6502::inc, AddressingMode::Zeropage),            // E6
             (MOS6502::not_implemented, AddressingMode::Implied), // E7
-            (MOS6502::not_implemented, AddressingMode::Implied), // E8
+            (MOS6502::inx, AddressingMode::Implied),             // E8
             (MOS6502::sbc, AddressingMode::Immediate),           // E9
             (MOS6502::not_implemented, AddressingMode::Implied), // EA
             (MOS6502::not_implemented, AddressingMode::Implied), // EB
             (MOS6502::not_implemented, AddressingMode::Implied), // EC
             (MOS6502::sbc, AddressingMode::Absolute),            // ED
-            (MOS6502::not_implemented, AddressingMode::Implied), // EE
+            (MOS6502::inc, AddressingMode::Absolute),            // EE
             (MOS6502::not_implemented, AddressingMode::Implied), // EF
             (MOS6502::not_implemented, AddressingMode::Implied), // F0
             (MOS6502::sbc, AddressingMode::IndirectYIndex),      // F1
@@ -313,7 +316,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // F3
             (MOS6502::not_implemented, AddressingMode::Implied), // F4
             (MOS6502::sbc, AddressingMode::ZeropageXIndex),      // F5
-            (MOS6502::not_implemented, AddressingMode::Implied), // F6
+            (MOS6502::inc, AddressingMode::ZeropageXIndex),      // F6
             (MOS6502::not_implemented, AddressingMode::Implied), // F7
             (MOS6502::not_implemented, AddressingMode::Implied), // F8
             (MOS6502::sbc, AddressingMode::AbsoluteYIndex),      // F9
@@ -321,17 +324,17 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // FB
             (MOS6502::not_implemented, AddressingMode::Implied), // FC
             (MOS6502::sbc, AddressingMode::AbsoluteXIndex),      // FD
-            (MOS6502::not_implemented, AddressingMode::Implied), // FE
+            (MOS6502::inc, AddressingMode::AbsoluteXIndex),      // FE
             (MOS6502::not_implemented, AddressingMode::Implied), // FF
         ];
         MOS6502 {
-            accumulator: 0x00,
-            x_register: 0x00,
-            y_register: 0x00,
-            program_counter: 0x00,
-            stack_pointer: 0xFF,
-            status_register: 0x00,
-            cycles: 0x00,
+            accumulator: u8::MIN,
+            x_register: u8::MIN,
+            y_register: u8::MIN,
+            program_counter: u16::MIN,
+            stack_pointer: u8::MAX,
+            status_register: u8::MIN,
+            cycles: u128::MIN,
             bus,
             opcode_array,
         }
@@ -446,6 +449,7 @@ impl<T: Bus> MOS6502<T> {
                     self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
+                self.increment_cycles(1);
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::AbsoluteYIndex => {
@@ -465,6 +469,7 @@ impl<T: Bus> MOS6502<T> {
                     self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
+                self.increment_cycles(1);
                 OpcodeOperand::Byte(self.bus.read(addr))
             }
             AddressingMode::Immediate => {
