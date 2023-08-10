@@ -2,9 +2,9 @@
 
 mod arithmetic_ops;
 mod dec_and_inc_ops;
+mod logical_ops;
 mod stack_ops;
 mod transfer_ops;
-mod logical_ops;
 
 pub trait Bus {
     /// Read byte from bus

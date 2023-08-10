@@ -54,7 +54,6 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.increment_cycles(1);
         let addr = match operand {
-            OpcodeOperand::Byte(b) => b as u16,
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STA");
@@ -68,7 +67,6 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.increment_cycles(1);
         let addr = match operand {
-            OpcodeOperand::Byte(b) => b as u16,
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STX");
@@ -82,7 +80,6 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.increment_cycles(1);
         let addr = match operand {
-            OpcodeOperand::Byte(b) => b as u16,
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STY");
