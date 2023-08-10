@@ -304,7 +304,7 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // E7
             (MOS6502::inx, AddressingMode::Implied),             // E8
             (MOS6502::sbc, AddressingMode::Immediate),           // E9
-            (MOS6502::not_implemented, AddressingMode::Implied), // EA
+            (MOS6502::nop, AddressingMode::Implied),             // EA
             (MOS6502::not_implemented, AddressingMode::Implied), // EB
             (MOS6502::not_implemented, AddressingMode::Implied), // EC
             (MOS6502::sbc, AddressingMode::Absolute),            // ED
@@ -344,6 +344,10 @@ impl<T: Bus> MOS6502<T> {
         panic!("Opcode not implemented.")
     }
 
+    fn nop(&mut self, _: AddressingMode) {
+        self.increment_cycles(2);
+    }
+
     /// Change value of program counter
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
@@ -359,7 +363,7 @@ impl<T: Bus> MOS6502<T> {
         let mut opc: u8;
         loop {
             opc = self.bus.read(self.program_counter);
-            let (opcode_func, address_mode) = self.opcode_array[opc as usize];
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
             self.increment_program_counter(1);
         }
@@ -370,7 +374,7 @@ impl<T: Bus> MOS6502<T> {
         let mut opc: u8;
         while self.cycles < cycles {
             opc = self.bus.read(self.program_counter);
-            let (opcode_func, address_mode) = self.opcode_array[opc as usize];
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
             self.increment_program_counter(1);
         }
