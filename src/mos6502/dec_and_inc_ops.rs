@@ -4,7 +4,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn dec(&mut self, address_mode: AddressingMode) {
         let addr = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(addr) => addr as u16,
-            OpcodeOperand::Word(addr) => addr,
+            OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for DEC");
             }
@@ -39,7 +39,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn inc(&mut self, address_mode: AddressingMode) {
         let addr = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(addr) => addr as u16,
-            OpcodeOperand::Word(addr) => addr,
+            OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for INC");
             }
