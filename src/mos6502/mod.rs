@@ -1,8 +1,15 @@
 #![allow(dead_code)]
 
 mod arithmetic_ops;
+mod branch_ops;
+mod comparison_ops;
 mod dec_and_inc_ops;
+mod flag_ops;
+mod interrupt_ops;
+mod jump_ops;
 mod logical_ops;
+mod other_ops;
+mod shift_and_rotate_ops;
 mod stack_ops;
 mod transfer_ops;
 
@@ -342,10 +349,6 @@ impl<T: Bus> MOS6502<T> {
 
     fn not_implemented(&mut self, _: AddressingMode) {
         panic!("Opcode not implemented.")
-    }
-
-    fn nop(&mut self, _: AddressingMode) {
-        self.increment_cycles(2);
     }
 
     /// Change value of program counter
