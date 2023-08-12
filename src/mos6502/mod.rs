@@ -434,7 +434,7 @@ impl<T: Bus> MOS6502<T> {
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
-                self.increment_cycles(2);
+                self.increment_cycles(3);
                 OpcodeOperand::Address(addr)
             }
             AddressingMode::AbsoluteXIndex => {
@@ -446,7 +446,6 @@ impl<T: Bus> MOS6502<T> {
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.x_register as u16);
 
-                self.increment_cycles(2);
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr = addr.wrapping_add(1);
@@ -454,7 +453,7 @@ impl<T: Bus> MOS6502<T> {
                     self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
-                self.increment_cycles(1);
+                self.increment_cycles(3);
                 OpcodeOperand::Address(addr)
             }
             AddressingMode::AbsoluteYIndex => {
@@ -466,7 +465,6 @@ impl<T: Bus> MOS6502<T> {
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16);
 
-                self.increment_cycles(2);
                 if self.flag_check(FLAG_CARRY) {
                     let old_addr = addr;
                     addr = addr.wrapping_add(1);
@@ -474,7 +472,7 @@ impl<T: Bus> MOS6502<T> {
                     self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
                 }
 
-                self.increment_cycles(1);
+                self.increment_cycles(3);
                 OpcodeOperand::Address(addr)
             }
             AddressingMode::Immediate => {
@@ -541,35 +539,30 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::Zeropage => {
                 self.increment_program_counter(1);
-                self.increment_cycles(1);
-
                 let zp_addr = self.bus.read(self.program_counter);
-                self.increment_cycles(1);
+
+                self.increment_cycles(2);
                 OpcodeOperand::Address(zp_addr as u16)
             }
             AddressingMode::ZeropageXIndex => {
                 self.increment_program_counter(1);
-                self.increment_cycles(1);
 
                 let offset = self.x_register;
                 let zp_addr = self.bus.read(self.program_counter);
-                self.increment_cycles(1);
 
                 let addr = zp_addr.wrapping_add(offset);
-                self.increment_cycles(1);
+                self.increment_cycles(3);
 
                 OpcodeOperand::Address(addr as u16)
             }
             AddressingMode::ZeropageYIndex => {
                 self.increment_program_counter(1);
-                self.increment_cycles(1);
 
                 let offset = self.y_register;
                 let zp_addr = self.bus.read(self.program_counter);
-                self.increment_cycles(1);
 
                 let addr = zp_addr.wrapping_add(offset);
-                self.increment_cycles(1);
+                self.increment_cycles(3);
 
                 OpcodeOperand::Address(addr as u16)
             }
