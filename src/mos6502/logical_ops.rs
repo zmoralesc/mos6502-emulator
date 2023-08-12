@@ -8,6 +8,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode for AND"),
         };
         self.accumulator = operand & self.accumulator;
+        self.increment_program_counter(1);
     }
 
     pub(super) fn eor(&mut self, address_mode: AddressingMode) {
@@ -17,6 +18,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode for EOR"),
         };
         self.accumulator = operand ^ self.accumulator;
+        self.increment_program_counter(1);
     }
 
     pub(super) fn ora(&mut self, address_mode: AddressingMode) {
@@ -26,5 +28,6 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode for ORA"),
         };
         self.accumulator = operand | self.accumulator;
+        self.increment_program_counter(1);
     }
 }

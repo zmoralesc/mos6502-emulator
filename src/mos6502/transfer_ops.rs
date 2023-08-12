@@ -15,6 +15,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+        self.increment_program_counter(1);
     }
 
     // load value into X register
@@ -31,6 +32,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
+        self.increment_program_counter(1);
     }
 
     // load value into Y register
@@ -47,45 +49,49 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
+        self.increment_program_counter(1);
     }
 
     // store accumulator in memory
     pub(super) fn sta(&mut self, address_mode: AddressingMode) {
         let operand = self.resolve_operand(address_mode);
-        self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STA");
             }
         };
+        self.increment_cycles(1);
         self.bus.write(addr, self.accumulator);
+        self.increment_program_counter(1);
     }
 
     // store X register in memory
     pub(super) fn stx(&mut self, address_mode: AddressingMode) {
         let operand = self.resolve_operand(address_mode);
-        self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STX");
             }
         };
+        self.increment_cycles(1);
         self.bus.write(addr, self.x_register);
+        self.increment_program_counter(1);
     }
 
     // store Y register in memory
     pub(super) fn sty(&mut self, address_mode: AddressingMode) {
         let operand = self.resolve_operand(address_mode);
-        self.increment_cycles(1);
         let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
             _ => {
                 panic!("Invalid addressing mode for STY");
             }
         };
+        self.increment_cycles(1);
         self.bus.write(addr, self.y_register);
+        self.increment_program_counter(1);
     }
 
     // transfer accumulator to X register
@@ -95,6 +101,8 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
+
+        self.increment_program_counter(1);
     }
 
     // transfer accumulator to Y register
@@ -104,6 +112,8 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
+
+        self.increment_program_counter(1);
     }
 
     // transfer stack pointer to X register
@@ -113,6 +123,8 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
+
+        self.increment_program_counter(1);
     }
 
     // transfer X register to accumulator
@@ -122,12 +134,16 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+
+        self.increment_program_counter(1);
     }
 
     // transfer X register to stack pointer
     pub(super) fn txs(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
         self.stack_pointer = self.x_register;
+
+        self.increment_program_counter(1);
     }
 
     // transfer Y register to accumulator
@@ -137,5 +153,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+
+        self.increment_program_counter(1);
     }
 }

@@ -21,12 +21,15 @@ impl<T: Bus> MOS6502<T> {
             .wrapping_add(value)
             .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
 
-        let overflow: bool = sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
+        let overflow: bool =
+            sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
         self.flag_toggle(FLAG_OVERFLOW, overflow);
+
+        self.increment_program_counter(1);
     }
 
     pub(super) fn sbc(&mut self, address_mode: AddressingMode) {
@@ -48,11 +51,14 @@ impl<T: Bus> MOS6502<T> {
             .wrapping_add(value)
             .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
 
-        let overflow: bool = sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
+        let overflow: bool =
+            sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
         self.flag_toggle(FLAG_OVERFLOW, overflow);
+
+        self.increment_program_counter(1);
     }
 }
