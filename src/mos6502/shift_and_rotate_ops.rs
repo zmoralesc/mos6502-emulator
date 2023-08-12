@@ -65,6 +65,7 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => panic!(),
         }
+        self.increment_program_counter(1);
     }
 
     pub(super) fn ror(&mut self, address_mode: AddressingMode) {
@@ -88,5 +89,6 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => panic!(),
         }
+        self.increment_program_counter(1);
     }
 }
