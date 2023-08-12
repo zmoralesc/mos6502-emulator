@@ -33,7 +33,7 @@ pub const FLAG_CARRY: u8 = 1 << 7;
 const STACK_BASE: u16 = 0x0100;
 
 const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
-const SIGN_BIT_MASK: u8 = 0b10000000;
+const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode);
 type OpcodeFunctionArray<T> = [(OpcodeFunction<T>, AddressingMode); 256];
@@ -379,7 +379,6 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
-            self.increment_program_counter(1);
         }
     }
 
@@ -388,8 +387,8 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Check if specified flag is set
-    pub fn flag_check(&self, f: u8) -> bool {
-        self.status_register & f != 0
+    pub fn flag_check(&self, flag: u8) -> bool {
+        self.status_register & flag != 0
     }
 
     pub fn accumulator(&self) -> u8 {
@@ -530,7 +529,7 @@ impl<T: Bus> MOS6502<T> {
                 let offset_byte = self.bus.read(self.program_counter);
 
                 let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
-                let is_negative = offset_byte & SIGN_BIT_MASK != 0;
+                let is_negative = offset_byte & NEGATIVE_BIT_MASK != 0;
 
                 let addr: u16 = if !is_negative {
                     self.program_counter.wrapping_add(offset_magnitude as u16)

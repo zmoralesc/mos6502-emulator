@@ -14,7 +14,7 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
     }
 
     // load value into X register
@@ -30,7 +30,7 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
     }
 
     // load value into Y register
@@ -46,7 +46,7 @@ impl<T: Bus> MOS6502<T> {
         };
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.y_register & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
     }
 
     // store accumulator in memory
@@ -94,7 +94,7 @@ impl<T: Bus> MOS6502<T> {
         self.x_register = self.accumulator;
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
     }
 
     // transfer accumulator to Y register
@@ -103,7 +103,7 @@ impl<T: Bus> MOS6502<T> {
         self.y_register = self.accumulator;
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.y_register & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
     }
 
     // transfer stack pointer to X register
@@ -112,7 +112,7 @@ impl<T: Bus> MOS6502<T> {
         self.x_register = self.stack_pointer;
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
     }
 
     // transfer X register to accumulator
@@ -121,7 +121,7 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator = self.x_register;
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
     }
 
     // transfer X register to stack pointer
@@ -136,6 +136,6 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator = self.y_register;
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & SIGN_BIT_MASK != 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
     }
 }
