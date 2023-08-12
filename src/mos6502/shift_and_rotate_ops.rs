@@ -63,7 +63,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
                 self.bus.write(w, value);
             }
-            _ => panic!(),
+            _ => panic!("Invalid addressing mode"),
         }
         self.increment_program_counter(1);
     }
@@ -87,7 +87,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
                 self.bus.write(w, value);
             }
-            _ => panic!(),
+            _ => panic!("Invalid addressing mode"),
         }
         self.increment_program_counter(1);
     }

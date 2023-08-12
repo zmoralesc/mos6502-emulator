@@ -368,7 +368,6 @@ impl<T: Bus> MOS6502<T> {
             opc = self.bus.read(self.program_counter);
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode);
-            self.increment_program_counter(1);
         }
     }
 
