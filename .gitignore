@@ -1,2 +1,4 @@
 /target
 .vscode
+print_opcode_array.py
+6502_opcodes.txt
