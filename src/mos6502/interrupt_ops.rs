@@ -17,7 +17,7 @@ impl<T: Bus> MOS6502<T> {
             .write(STACK_BASE + self.stack_pointer as u16, return_address_hi);
         self.stack_pointer = self.stack_pointer.wrapping_sub(1);
 
-        // push SP to stack
+        // push SR to stack
         self.bus.write(
             STACK_BASE + self.stack_pointer as u16,
             self.status_register | FLAG_BREAK,
@@ -35,7 +35,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     pub(super) fn rti(&mut self, address_mode: AddressingMode) {
-        // pull SP from stack
+        // pull SR from stack
         self.status_register = self.bus.read(STACK_BASE + self.stack_pointer as u16) & !FLAG_BREAK;
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
 
