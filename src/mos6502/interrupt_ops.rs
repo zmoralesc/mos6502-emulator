@@ -39,11 +39,11 @@ impl<T: Bus> MOS6502<T> {
         self.status_register = self.bus.read(STACK_BASE + self.stack_pointer as u16) & !FLAG_BREAK;
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
 
-        // pull high byte of return addres from stack
+        // pull high byte of return address from stack
         let return_address_hi = self.bus.read(STACK_BASE + self.stack_pointer as u16);
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
 
-        // pull low byte of return addres from stack
+        // pull low byte of return address from stack
         let return_address_lo = self.bus.read(STACK_BASE + self.stack_pointer as u16);
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
 
