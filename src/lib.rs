@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+mod composite_bus;
 mod memory;
 mod mos6502;
 
@@ -17,7 +18,7 @@ mod tests {
         let cycles_to_run = 2;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram);
+        let mut cpu = MOS6502::new(ram, false);
 
         let bus: &mut dyn Bus = cpu.bus();
 
@@ -39,7 +40,7 @@ mod tests {
         let cycles_to_run = 6; // 2 for LDX, 4 for LDA
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram);
+        let mut cpu = MOS6502::new(ram, false);
 
         let bus: &mut dyn Bus = cpu.bus();
 
@@ -68,7 +69,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram);
+        let mut cpu = MOS6502::new(ram, false);
 
         let bus: &mut dyn Bus = cpu.bus();
 
@@ -99,7 +100,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram);
+        let mut cpu = MOS6502::new(ram, false);
 
         let bus: &mut dyn Bus = cpu.bus();
 

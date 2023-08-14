@@ -49,7 +49,7 @@ impl<T: Bus> MOS6502<T> {
         match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(_) => {
                 let bit7_is_set = self.accumulator & NEGATIVE_BIT_MASK != 0;
-                self.accumulator = self.accumulator.shl(1) | carry_bit_mask;
+                self.set_accumulator(self.accumulator.shl(1) | carry_bit_mask);
                 self.flag_toggle(FLAG_CARRY, bit7_is_set);
                 self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
                 self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
@@ -73,7 +73,7 @@ impl<T: Bus> MOS6502<T> {
         match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 == 1;
-                self.accumulator = self.accumulator.shr(1) | carry_bit_mask;
+                self.set_accumulator(self.accumulator.shr(1) | carry_bit_mask);
                 self.flag_toggle(FLAG_CARRY, bit0_is_set);
                 self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
                 self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);

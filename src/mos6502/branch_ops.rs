@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if !self.flag_check(FLAG_CARRY) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -18,7 +18,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if self.flag_check(FLAG_CARRY) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -29,7 +29,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if self.flag_check(FLAG_ZERO) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -40,7 +40,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if self.flag_check(FLAG_NEGATIVE) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -51,7 +51,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if !self.flag_check(FLAG_ZERO) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -62,7 +62,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if !self.flag_check(FLAG_NEGATIVE) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -73,7 +73,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if !self.flag_check(FLAG_OVERFLOW) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }
@@ -84,7 +84,7 @@ impl<T: Bus> MOS6502<T> {
             _ => panic!("Invalid addressing mode."),
         };
         if self.flag_check(FLAG_OVERFLOW) {
-            self.program_counter = addr;
+            self.set_program_counter(addr);
         }
         self.increment_cycles(1);
     }

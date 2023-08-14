@@ -5,13 +5,13 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn lda(&mut self, address_mode: AddressingMode) {
         self.increment_cycles(1);
         let operand = self.resolve_operand(address_mode);
-        self.accumulator = match operand {
+        self.set_accumulator(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDA");
             }
-        };
+        });
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
@@ -22,13 +22,13 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn ldx(&mut self, address_mode: AddressingMode) {
         self.increment_cycles(1);
         let operand = self.resolve_operand(address_mode);
-        self.x_register = match operand {
+        self.set_x_register(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDX");
             }
-        };
+        });
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
@@ -39,13 +39,13 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn ldy(&mut self, address_mode: AddressingMode) {
         self.increment_cycles(1);
         let operand = self.resolve_operand(address_mode);
-        self.y_register = match operand {
+        self.set_y_register(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.bus.read(addr),
             _ => {
                 panic!("Invalid addressing mode for LDY");
             }
-        };
+        });
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
@@ -97,7 +97,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer accumulator to X register
     pub(super) fn tax(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.x_register = self.accumulator;
+        self.set_x_register(self.accumulator);
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
@@ -108,7 +108,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer accumulator to Y register
     pub(super) fn tay(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.y_register = self.accumulator;
+        self.set_y_register(self.accumulator);
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
@@ -119,7 +119,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer stack pointer to X register
     pub(super) fn tsx(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.x_register = self.stack_pointer;
+        self.set_x_register(self.stack_pointer);
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
@@ -130,7 +130,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer X register to accumulator
     pub(super) fn txa(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.accumulator = self.x_register;
+        self.set_accumulator(self.x_register);
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
@@ -141,7 +141,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer X register to stack pointer
     pub(super) fn txs(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.stack_pointer = self.x_register;
+        self.set_stack_pointer(self.x_register);
 
         self.increment_program_counter(1);
     }
@@ -149,7 +149,7 @@ impl<T: Bus> MOS6502<T> {
     // transfer Y register to accumulator
     pub(super) fn tya(&mut self, _: AddressingMode) {
         self.increment_cycles(2);
-        self.accumulator = self.y_register;
+        self.set_accumulator(self.y_register);
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);

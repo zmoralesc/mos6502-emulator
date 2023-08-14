@@ -22,6 +22,31 @@ pub trait Bus {
     fn size(&self) -> usize;
 }
 
+pub struct ReadEvent {
+    address: u16,
+    value: u8,
+}
+
+pub struct WriteEvent {
+    address: u16,
+    value: u8,
+}
+
+pub enum RegisterUpdateEvent {
+    Accumulator(u8),
+    X(u8),
+    Y(u8),
+    StackPointer(u16),
+    StatusRegister(u8),
+    ProgramCounter(u8),
+}
+
+pub enum CpuEvent {
+    Read(ReadEvent),
+    Write(WriteEvent),
+    RegisterUpdated(RegisterUpdateEvent),
+}
+
 pub const FLAG_NEGATIVE: u8 = 1 << 0;
 pub const FLAG_OVERFLOW: u8 = 1 << 1;
 pub const FLAG_BREAK: u8 = 1 << 3;
@@ -71,11 +96,12 @@ pub struct MOS6502<T: Bus> {
     cycles: u128,
     bus: T,
     opcode_array: OpcodeFunctionArray<T>,
+    emit_events: bool,
 }
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new(bus: T) -> MOS6502<T> {
+    pub fn new(bus: T, emit_events: bool) -> MOS6502<T> {
         let opcode_array: OpcodeFunctionArray<T> = [
             (MOS6502::brk, AddressingMode::Implied),             // 00
             (MOS6502::ora, AddressingMode::XIndexIndirect),      // 01
@@ -344,6 +370,7 @@ impl<T: Bus> MOS6502<T> {
             cycles: u128::MIN,
             bus,
             opcode_array,
+            emit_events,
         }
     }
 
@@ -354,6 +381,16 @@ impl<T: Bus> MOS6502<T> {
     /// Change value of program counter
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
+    }
+
+    /// Change value of stack pointer
+    pub fn set_stack_pointer(&mut self, value: u8) {
+        self.stack_pointer = value;
+    }
+
+    /// Change value of status register
+    pub fn set_status_register(&mut self, value: u8) {
+        self.status_register = value;
     }
 
     /// Return number of elapsed CPU cycles
@@ -394,16 +431,28 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator
     }
 
+    fn set_accumulator(&mut self, value: u8) {
+        self.accumulator = value;
+    }
+
     pub fn x_register(&self) -> u8 {
         self.x_register
+    }
+
+    fn set_x_register(&mut self, value: u8) {
+        self.x_register = value;
     }
 
     pub fn y_register(&self) -> u8 {
         self.y_register
     }
 
+    fn set_y_register(&mut self, value: u8) {
+        self.y_register = value;
+    }
+
     fn increment_program_counter(&mut self, n: u16) {
-        self.program_counter = self.program_counter.wrapping_add(n);
+        self.set_program_counter(self.program_counter.wrapping_add(n));
     }
 
     fn increment_cycles(&mut self, n: u128) {
