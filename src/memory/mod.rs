@@ -1,32 +1,20 @@
-#![allow(dead_code)]
-
 use crate::mos6502::Bus;
 
-#[derive(Clone)]
-pub struct Ram {
-    size: usize,
-    buffer: Vec<u8>,
+pub struct CompositeBus<T: Bus> {
+    components: Vec<T>,
+    cached_size: u16,
 }
 
-impl Ram {
-    pub fn new(size: usize) -> Ram {
-        Ram {
-            size,
-            buffer: vec![0; size],
+pub struct MirrorBus<T: Bus> {
+    components: Vec<T>,
+    mirrors: u16,
+}
+
+impl<T: Bus> CompositeBus<T> {
+    pub fn new(components: Vec<T>) -> CompositeBus<T> {
+        CompositeBus {
+            components,
+            cached_size: 0,
         }
-    }
-}
-
-impl Bus for Ram {
-    fn read(&self, address: u16) -> u8 {
-        self.buffer[address as usize]
-    }
-
-    fn write(&mut self, address: u16, value: u8) {
-        self.buffer[address as usize] = value;
-    }
-
-    fn size(&self) -> usize {
-        self.size
     }
 }

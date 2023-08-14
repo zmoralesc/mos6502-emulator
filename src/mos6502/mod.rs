@@ -483,7 +483,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     pub fn run(mut self) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
         let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
         if self.emit_events {
-            println!("event enabled");
             self.event_sender = Some(sender);
         }
         let t = thread::spawn(move || {
@@ -503,7 +502,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     pub fn run_for_cycles(mut self, cycles: u128) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
         let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
         if self.emit_events {
-            println!("events enabled");
             self.event_sender = Some(sender);
         }
         let t = thread::spawn(move || {
