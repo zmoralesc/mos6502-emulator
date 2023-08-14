@@ -13,7 +13,7 @@ mod transfer_ops;
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread::{self, JoinHandle, Thread};
+use std::thread::{self, JoinHandle};
 
 pub trait Bus {
     /// Read byte from bus
@@ -488,6 +488,11 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         let t = thread::spawn(move || {
             let mut opc: u8;
             loop {
+                if let Some(receiver) = self.control_receiver.as_ref() {
+                    if let CpuControl::Stop = receiver.recv().unwrap() {
+                        break;
+                    }
+                }
                 opc = self.read_from_bus(self.program_counter);
                 let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
                 opcode_func(&mut self, address_mode);
