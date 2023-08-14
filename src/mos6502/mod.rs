@@ -25,13 +25,13 @@ pub trait Bus {
 }
 
 pub struct ReadEvent {
-    address: u16,
-    value: u8,
+    pub address: u16,
+    pub value: u8,
 }
 
 pub struct WriteEvent {
-    address: u16,
-    value: u8,
+    pub address: u16,
+    pub value: u8,
 }
 
 pub enum RegisterUpdateEvent {
