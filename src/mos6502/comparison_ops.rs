@@ -11,6 +11,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.increment_cycles(1);
         let result = self.accumulator.wrapping_sub(operand);
+        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
 
         match self.accumulator.cmp(&operand) {
             Ordering::Less => {
@@ -26,8 +27,6 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
-
-        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
     }
 
     pub(super) fn cpx(&mut self, address_mode: AddressingMode) {
@@ -39,6 +38,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.increment_cycles(1);
         let result = self.x_register.wrapping_sub(operand);
+        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
 
         match self.x_register.cmp(&operand) {
             Ordering::Less => {
@@ -54,8 +54,6 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
-
-        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
     }
 
     pub(super) fn cpy(&mut self, address_mode: AddressingMode) {
@@ -67,6 +65,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.increment_cycles(1);
         let result = self.y_register.wrapping_sub(operand);
+        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
 
         match self.y_register.cmp(&operand) {
             Ordering::Less => {
@@ -82,7 +81,5 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
-
-        self.flag_toggle(FLAG_NEGATIVE, result & NEGATIVE_BIT_MASK != 0);
     }
 }
