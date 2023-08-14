@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod arithmetic_ops;
 mod branch_ops;
 mod comparison_ops;
