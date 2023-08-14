@@ -8,8 +8,8 @@ impl<T: Bus> MOS6502<T> {
                 panic!("Invalid addressing mode for DEC");
             }
         };
-        let value = self.bus.read(addr).wrapping_sub(1);
-        self.bus.write(addr, value);
+        let value = self.read_from_bus(addr).wrapping_sub(1);
+        self.write_to_bus(addr, value);
 
         self.flag_toggle(FLAG_NEGATIVE, value & NEGATIVE_BIT_MASK != 0);
         self.flag_toggle(FLAG_ZERO, value == 0);
@@ -42,8 +42,8 @@ impl<T: Bus> MOS6502<T> {
                 panic!("Invalid addressing mode for INC");
             }
         };
-        let value = self.bus.read(addr).wrapping_add(1);
-        self.bus.write(addr, value);
+        let value = self.read_from_bus(addr).wrapping_add(1);
+        self.write_to_bus(addr, value);
 
         self.flag_toggle(FLAG_NEGATIVE, value & NEGATIVE_BIT_MASK != 0);
         self.flag_toggle(FLAG_ZERO, value == 0);

@@ -18,12 +18,10 @@ mod tests {
         let cycles_to_run = 2;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false);
+        let mut cpu = MOS6502::new(ram, false, None);
 
-        let bus: &mut dyn Bus = cpu.bus();
-
-        bus.write(program_start, 0xa2);
-        bus.write(program_start + 1, x_value);
+        cpu.write_to_bus(program_start, 0xa2);
+        cpu.write_to_bus(program_start + 1, x_value);
 
         cpu.set_program_counter(program_start);
         cpu.run_for_cycles(cycles_to_run);
@@ -40,9 +38,7 @@ mod tests {
         let cycles_to_run = 6; // 2 for LDX, 4 for LDA
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false);
-
-        let bus: &mut dyn Bus = cpu.bus();
+        let mut cpu = MOS6502::new(ram, false, None);
 
         let program = vec![
             0xa2,    // LDX, immediate
@@ -52,9 +48,9 @@ mod tests {
         ];
 
         for (i, byte) in program.iter().enumerate() {
-            bus.write(program_start + i as u16, *byte);
+            cpu.write_to_bus(program_start + i as u16, *byte);
         }
-        bus.write(zp_addr.wrapping_add(offset) as u16, acc_value);
+        cpu.write_to_bus(zp_addr.wrapping_add(offset) as u16, acc_value);
 
         cpu.set_program_counter(program_start);
         cpu.run_for_cycles(cycles_to_run);
@@ -69,9 +65,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false);
-
-        let bus: &mut dyn Bus = cpu.bus();
+        let mut cpu = MOS6502::new(ram, false, None);
 
         let value_to_store: u8 = 0xe5;
         let value_to_add: u8 = 0x01;
@@ -85,7 +79,7 @@ mod tests {
         ];
 
         for (i, byte) in program.iter().enumerate() {
-            bus.write(program_start + i as u16, *byte);
+            cpu.write_to_bus(program_start + i as u16, *byte);
         }
 
         cpu.set_program_counter(program_start);
@@ -100,9 +94,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false);
-
-        let bus: &mut dyn Bus = cpu.bus();
+        let mut cpu = MOS6502::new(ram, false, None);
 
         let value_to_store: u8 = 0xe5;
         let value_to_subtract: u8 = 0x02;
@@ -116,7 +108,7 @@ mod tests {
         ];
 
         for (i, byte) in program.iter().enumerate() {
-            bus.write(program_start + i as u16, *byte);
+            cpu.write_to_bus(program_start + i as u16, *byte);
         }
 
         cpu.set_program_counter(program_start);

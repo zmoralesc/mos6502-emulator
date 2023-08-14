@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bit(&mut self, address_mode: AddressingMode) {
         let operand = match self.resolve_operand(address_mode) {
-            OpcodeOperand::Address(w) => self.bus.read(w),
+            OpcodeOperand::Address(w) => self.read_from_bus(w),
             _ => panic!("Invalid addressing mode."),
         };
 

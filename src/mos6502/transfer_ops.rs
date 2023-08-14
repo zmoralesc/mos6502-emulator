@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.set_accumulator(match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr),
             _ => {
                 panic!("Invalid addressing mode for LDA");
             }
@@ -24,7 +24,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.set_x_register(match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr),
             _ => {
                 panic!("Invalid addressing mode for LDX");
             }
@@ -41,7 +41,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         self.set_y_register(match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr),
             _ => {
                 panic!("Invalid addressing mode for LDY");
             }
@@ -62,7 +62,7 @@ impl<T: Bus> MOS6502<T> {
             }
         };
         self.increment_cycles(1);
-        self.bus.write(addr, self.accumulator);
+        self.write_to_bus(addr, self.accumulator);
         self.increment_program_counter(1);
     }
 
@@ -76,7 +76,7 @@ impl<T: Bus> MOS6502<T> {
             }
         };
         self.increment_cycles(1);
-        self.bus.write(addr, self.x_register);
+        self.write_to_bus(addr, self.x_register);
         self.increment_program_counter(1);
     }
 
@@ -90,7 +90,7 @@ impl<T: Bus> MOS6502<T> {
             }
         };
         self.increment_cycles(1);
-        self.bus.write(addr, self.y_register);
+        self.write_to_bus(addr, self.y_register);
         self.increment_program_counter(1);
     }
 

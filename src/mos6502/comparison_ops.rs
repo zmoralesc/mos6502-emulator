@@ -5,7 +5,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn cmp(&mut self, address_mode: AddressingMode) {
         let operand: u8 = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.bus.read(w),
+            OpcodeOperand::Address(w) => self.read_from_bus(w),
             _ => panic!("Invalid addressing mode."),
         };
 
@@ -32,7 +32,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn cpx(&mut self, address_mode: AddressingMode) {
         let operand: u8 = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.bus.read(w),
+            OpcodeOperand::Address(w) => self.read_from_bus(w),
             _ => panic!("Invalid addressing mode."),
         };
 
@@ -59,7 +59,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn cpy(&mut self, address_mode: AddressingMode) {
         let operand: u8 = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.bus.read(w),
+            OpcodeOperand::Address(w) => self.read_from_bus(w),
             _ => panic!("Invalid addressing mode."),
         };
 

@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         let value = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.bus.read(addr),
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr),
             _ => {
                 panic!("Invalid addressing mode for ADC");
             }
@@ -38,7 +38,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = self.resolve_operand(address_mode);
         let value = match operand {
             OpcodeOperand::Byte(b) => b.wrapping_neg(),
-            OpcodeOperand::Address(addr) => self.bus.read(addr).wrapping_neg(),
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr).wrapping_neg(),
             _ => {
                 panic!("Invalid addressing mode for ADC");
             }
