@@ -1,5 +1,20 @@
 use super::*;
 
+macro_rules! store_register_value {
+    ($cpu:expr, $register:expr, $address_mode:ident) => {
+        let operand = $cpu.resolve_operand($address_mode);
+        let addr = match operand {
+            OpcodeOperand::Address(addr) => addr,
+            _ => {
+                panic!("Invalid addressing mode.");
+            }
+        };
+        $cpu.increment_cycles(1);
+        $cpu.write_to_bus(addr, $register);
+        $cpu.increment_program_counter(1);
+    };
+}
+
 impl<T: Bus + Send + Sync> MOS6502<T> {
     // load value into accumulator
     pub(super) fn lda(&mut self, address_mode: AddressingMode) {
@@ -54,44 +69,17 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
     // store accumulator in memory
     pub(super) fn sta(&mut self, address_mode: AddressingMode) {
-        let operand = self.resolve_operand(address_mode);
-        let addr = match operand {
-            OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode for STA");
-            }
-        };
-        self.increment_cycles(1);
-        self.write_to_bus(addr, self.accumulator);
-        self.increment_program_counter(1);
+        store_register_value!(self, self.accumulator, address_mode);
     }
 
     // store X register in memory
     pub(super) fn stx(&mut self, address_mode: AddressingMode) {
-        let operand = self.resolve_operand(address_mode);
-        let addr = match operand {
-            OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode for STX");
-            }
-        };
-        self.increment_cycles(1);
-        self.write_to_bus(addr, self.x_register);
-        self.increment_program_counter(1);
+        store_register_value!(self, self.x_register, address_mode);
     }
 
     // store Y register in memory
     pub(super) fn sty(&mut self, address_mode: AddressingMode) {
-        let operand = self.resolve_operand(address_mode);
-        let addr = match operand {
-            OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode for STY");
-            }
-        };
-        self.increment_cycles(1);
-        self.write_to_bus(addr, self.y_register);
-        self.increment_program_counter(1);
+        store_register_value!(self, self.y_register, address_mode);
     }
 
     // transfer accumulator to X register

@@ -45,6 +45,7 @@ pub enum RegisterUpdateEvent {
 
 pub enum CpuControl {
     Stop,
+    Continue,
     Pause,
     Resume,
 }
@@ -59,6 +60,18 @@ macro_rules! send_event {
     ($sender:expr, $event:expr) => {
         if let Some(sender) = $sender.as_ref() {
             sender.send($event).unwrap();
+        }
+    };
+}
+
+macro_rules! wait_for_continue {
+    ($receiver:expr) => {
+        if let Some(recv) = $receiver.as_ref() {
+            loop {
+                if let CpuControl::Continue = recv.recv().unwrap() {
+                    break;
+                }
+            }
         }
     };
 }
@@ -433,6 +446,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::Read(ReadEvent { address, value })
         );
+        wait_for_continue!(self.control_receiver);
         value
     }
 
@@ -442,6 +456,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::Write(WriteEvent { address, value })
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     /// Change value of program counter
@@ -452,6 +467,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::ProgramCounter(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     /// Change value of stack pointer
@@ -462,6 +478,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::StackPointer(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     /// Change value of status register
@@ -472,6 +489,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::StatusRegister(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     /// Return number of elapsed CPU cycles
@@ -489,8 +507,10 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             let mut opc: u8;
             loop {
                 if let Some(receiver) = self.control_receiver.as_ref() {
-                    if let CpuControl::Stop = receiver.recv().unwrap() {
-                        break;
+                    match receiver.recv().unwrap() {
+                        CpuControl::Stop => break,
+                        CpuControl::Continue => (),
+                        _ => (),
                     }
                 }
                 opc = self.read_from_bus(self.program_counter);
@@ -538,6 +558,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::Accumulator(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     pub fn x_register(&self) -> u8 {
@@ -551,6 +572,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     pub fn y_register(&self) -> u8 {
@@ -564,6 +586,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             self.event_sender,
             CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value))
         );
+        wait_for_continue!(self.control_receiver);
     }
 
     fn increment_program_counter(&mut self, n: u16) {
