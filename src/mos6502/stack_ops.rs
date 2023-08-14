@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus> MOS6502<T> {
+impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn pha(&mut self, _: AddressingMode) {
         let target_address: u16 = STACK_BASE + self.stack_pointer as u16;
         self.write_to_bus(target_address, self.accumulator);
@@ -27,7 +27,9 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn plp(&mut self, _: AddressingMode) {
         let target_address: u16 = STACK_BASE + self.stack_pointer as u16;
-        self.set_status_register(self.read_from_bus(target_address) & !FLAG_BREAK & !FLAG_NO_INTERRUPTS);
+        self.set_status_register(
+            self.read_from_bus(target_address) & !FLAG_BREAK & !FLAG_NO_INTERRUPTS,
+        );
         self.set_stack_pointer(self.stack_pointer.wrapping_add(1));
         self.increment_cycles(4);
     }

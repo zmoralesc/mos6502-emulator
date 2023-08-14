@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus> MOS6502<T> {
+impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn and(&mut self, address_mode: AddressingMode) {
         let operand = match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(b) => b,

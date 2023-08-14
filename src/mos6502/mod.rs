@@ -13,7 +13,7 @@ mod transfer_ops;
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
+use std::thread::{self, JoinHandle, Thread};
 
 pub trait Bus {
     /// Read byte from bus
@@ -53,6 +53,14 @@ pub enum CpuEvent {
     Read(ReadEvent),
     Write(WriteEvent),
     RegisterUpdated(RegisterUpdateEvent),
+}
+
+macro_rules! send_event {
+    ($sender:expr, $event:expr) => {
+        if let Some(sender) = $sender.as_ref() {
+            sender.send($event).unwrap();
+        }
+    };
 }
 
 pub const FLAG_NEGATIVE: u8 = 1 << 0;
@@ -115,7 +123,7 @@ pub struct CpuState {
     pub flags: StatusFlags,
 }
 
-pub struct MOS6502<T: Bus> {
+pub struct MOS6502<T: Bus + Send + Sync + 'static> {
     accumulator: u8,
     x_register: u8,
     y_register: u8,
@@ -130,12 +138,14 @@ pub struct MOS6502<T: Bus> {
     control_receiver: Option<Receiver<CpuControl>>,
 }
 
-impl<T: Bus> MOS6502<T> {
+unsafe impl<T: Bus + Send + Sync> Send for MOS6502<T> {}
+unsafe impl<T: Bus + Send + Sync> Sync for MOS6502<T> {}
+
+impl<T: Bus + Send + Sync> MOS6502<T> {
     /// Create new instance of MOS6502
     pub fn new(
         bus: T,
         emit_events: bool,
-        event_sender: Option<Sender<CpuEvent>>,
         control_receiver: Option<Receiver<CpuControl>>,
     ) -> MOS6502<T> {
         let opcode_array: OpcodeFunctionArray<T> = [
@@ -408,7 +418,7 @@ impl<T: Bus> MOS6502<T> {
             bus,
             opcode_array,
             emit_events,
-            event_sender,
+            event_sender: None,
             control_receiver,
         }
     }
@@ -419,67 +429,49 @@ impl<T: Bus> MOS6502<T> {
 
     pub fn read_from_bus(&self, address: u16) -> u8 {
         let value = self.bus.read(address);
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::Read(ReadEvent { address, value }))
-                .unwrap();
-        }
+        send_event!(
+            self.event_sender,
+            CpuEvent::Read(ReadEvent { address, value })
+        );
         value
     }
 
     pub fn write_to_bus(&mut self, address: u16, value: u8) {
         self.bus.write(address, value);
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::Write(WriteEvent { address, value }))
-                .unwrap();
-        }
+        send_event!(
+            self.event_sender,
+            CpuEvent::Write(WriteEvent { address, value })
+        );
     }
 
     /// Change value of program counter
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(
-                    RegisterUpdateEvent::ProgramCounter(value),
-                ))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::ProgramCounter(value))
+        );
     }
 
     /// Change value of stack pointer
     pub fn set_stack_pointer(&mut self, value: u8) {
         self.stack_pointer = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(
-                    RegisterUpdateEvent::StackPointer(value),
-                ))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::StackPointer(value))
+        );
     }
 
     /// Change value of status register
     pub fn set_status_register(&mut self, value: u8) {
         self.status_register = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(
-                    RegisterUpdateEvent::StatusRegister(value),
-                ))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::StatusRegister(value))
+        );
     }
 
     /// Return number of elapsed CPU cycles
@@ -488,21 +480,43 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Start CPU
-    pub fn run(&mut self) {
-        let mut opc: u8;
-        opc = self.read_from_bus(self.program_counter);
-        let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-        opcode_func(self, address_mode);
+    pub fn run(mut self) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
+        let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
+        if self.emit_events {
+            println!("event enabled");
+            self.event_sender = Some(sender);
+        }
+        let t = thread::spawn(move || {
+            let mut opc: u8;
+            loop {
+                opc = self.read_from_bus(self.program_counter);
+                let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+                opcode_func(&mut self, address_mode);
+            }
+            self.event_sender = None;
+            self
+        });
+        (t, receiver)
     }
 
     /// Run CPU for a specific number of cycles
-    pub fn run_for_cycles(&mut self, cycles: u128) {
-        let mut opc: u8;
-        while self.cycles < cycles {
-            opc = self.read_from_bus(self.program_counter);
-            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-            opcode_func(self, address_mode);
+    pub fn run_for_cycles(mut self, cycles: u128) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
+        let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
+        if self.emit_events {
+            println!("events enabled");
+            self.event_sender = Some(sender);
         }
+        let t = thread::spawn(move || {
+            let mut opc: u8;
+            while self.cycles < cycles {
+                opc = self.read_from_bus(self.program_counter);
+                let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+                opcode_func(&mut self, address_mode);
+            }
+            self.event_sender = None;
+            self
+        });
+        (t, receiver)
     }
 
     /// Check if specified flag is set
@@ -516,15 +530,11 @@ impl<T: Bus> MOS6502<T> {
 
     fn set_accumulator(&mut self, value: u8) {
         self.accumulator = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::Accumulator(
-                    value,
-                )))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::Accumulator(value))
+        );
     }
 
     pub fn x_register(&self) -> u8 {
@@ -533,13 +543,11 @@ impl<T: Bus> MOS6502<T> {
 
     fn set_x_register(&mut self, value: u8) {
         self.x_register = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value)))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value))
+        );
     }
 
     pub fn y_register(&self) -> u8 {
@@ -548,13 +556,11 @@ impl<T: Bus> MOS6502<T> {
 
     fn set_y_register(&mut self, value: u8) {
         self.y_register = value;
-        if self.emit_events {
-            self.event_sender
-                .as_ref()
-                .unwrap()
-                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value)))
-                .unwrap();
-        }
+
+        send_event!(
+            self.event_sender,
+            CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value))
+        );
     }
 
     fn increment_program_counter(&mut self, n: u16) {

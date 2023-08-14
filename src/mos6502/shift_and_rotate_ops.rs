@@ -2,7 +2,7 @@ use std::ops::{Shl, Shr};
 
 use super::*;
 
-impl<T: Bus> MOS6502<T> {
+impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn asl(&mut self, address_mode: AddressingMode) {
         match self.resolve_operand(address_mode) {
             OpcodeOperand::Byte(_) => {

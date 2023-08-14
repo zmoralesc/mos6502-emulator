@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus> MOS6502<T> {
+impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn jmp(&mut self, address_mode: AddressingMode) {
         let new_pc_value = match self.resolve_operand(address_mode) {
             OpcodeOperand::Address(w) => w,
