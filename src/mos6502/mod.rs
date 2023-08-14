@@ -43,6 +43,12 @@ pub enum RegisterUpdateEvent {
     ProgramCounter(u16),
 }
 
+pub enum CpuControl {
+    Stop,
+    Pause,
+    Resume,
+}
+
 pub enum CpuEvent {
     Read(ReadEvent),
     Write(WriteEvent),
@@ -89,13 +95,13 @@ enum AddressingMode {
 }
 
 pub struct StatusFlags {
-    pub negative: bool,
-    pub overflow: bool,
-    pub brk: bool,
-    pub decimal: bool,
-    pub no_interrupts: bool,
-    pub zero: bool,
-    pub carry: bool,
+    pub negative_flag: bool,
+    pub overflow_flag: bool,
+    pub break_flag: bool,
+    pub decimal_flag: bool,
+    pub no_interrupts_flag: bool,
+    pub zero_flag: bool,
+    pub carry_flag: bool,
 }
 
 pub struct CpuState {
@@ -121,11 +127,17 @@ pub struct MOS6502<T: Bus> {
     opcode_array: OpcodeFunctionArray<T>,
     emit_events: bool,
     event_sender: Option<Sender<CpuEvent>>,
+    control_receiver: Option<Receiver<CpuControl>>,
 }
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new(bus: T, emit_events: bool, event_sender: Option<Sender<CpuEvent>>) -> MOS6502<T> {
+    pub fn new(
+        bus: T,
+        emit_events: bool,
+        event_sender: Option<Sender<CpuEvent>>,
+        control_receiver: Option<Receiver<CpuControl>>,
+    ) -> MOS6502<T> {
         let opcode_array: OpcodeFunctionArray<T> = [
             (MOS6502::brk, AddressingMode::Implied),             // 00
             (MOS6502::ora, AddressingMode::XIndexIndirect),      // 01
@@ -397,6 +409,7 @@ impl<T: Bus> MOS6502<T> {
             opcode_array,
             emit_events,
             event_sender,
+            control_receiver,
         }
     }
 
@@ -410,7 +423,8 @@ impl<T: Bus> MOS6502<T> {
             self.event_sender
                 .as_ref()
                 .unwrap()
-                .send(CpuEvent::Read(ReadEvent { address, value }));
+                .send(CpuEvent::Read(ReadEvent { address, value }))
+                .unwrap();
         }
         value
     }
@@ -421,7 +435,8 @@ impl<T: Bus> MOS6502<T> {
             self.event_sender
                 .as_ref()
                 .unwrap()
-                .send(CpuEvent::Write(WriteEvent { address, value }));
+                .send(CpuEvent::Write(WriteEvent { address, value }))
+                .unwrap();
         }
     }
 
@@ -434,7 +449,8 @@ impl<T: Bus> MOS6502<T> {
                 .unwrap()
                 .send(CpuEvent::RegisterUpdated(
                     RegisterUpdateEvent::ProgramCounter(value),
-                ));
+                ))
+                .unwrap();
         }
     }
 
@@ -447,7 +463,8 @@ impl<T: Bus> MOS6502<T> {
                 .unwrap()
                 .send(CpuEvent::RegisterUpdated(
                     RegisterUpdateEvent::StackPointer(value),
-                ));
+                ))
+                .unwrap();
         }
     }
 
@@ -460,7 +477,8 @@ impl<T: Bus> MOS6502<T> {
                 .unwrap()
                 .send(CpuEvent::RegisterUpdated(
                     RegisterUpdateEvent::StatusRegister(value),
-                ));
+                ))
+                .unwrap();
         }
     }
 
@@ -504,7 +522,8 @@ impl<T: Bus> MOS6502<T> {
                 .unwrap()
                 .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::Accumulator(
                     value,
-                )));
+                )))
+                .unwrap();
         }
     }
 
@@ -518,7 +537,8 @@ impl<T: Bus> MOS6502<T> {
             self.event_sender
                 .as_ref()
                 .unwrap()
-                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value)));
+                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value)))
+                .unwrap();
         }
     }
 
@@ -532,7 +552,8 @@ impl<T: Bus> MOS6502<T> {
             self.event_sender
                 .as_ref()
                 .unwrap()
-                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value)));
+                .send(CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value)))
+                .unwrap();
         }
     }
 

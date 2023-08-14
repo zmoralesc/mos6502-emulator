@@ -9,6 +9,8 @@ use mos6502::*;
 
 #[cfg(test)]
 mod tests {
+    use std::{sync::mpsc, thread, time::Duration};
+
     use super::*;
 
     #[test]
@@ -18,7 +20,7 @@ mod tests {
         let cycles_to_run = 2;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false, None);
+        let mut cpu = MOS6502::new(ram, false, None, None);
 
         cpu.write_to_bus(program_start, 0xa2);
         cpu.write_to_bus(program_start + 1, x_value);
@@ -38,7 +40,7 @@ mod tests {
         let cycles_to_run = 6; // 2 for LDX, 4 for LDA
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false, None);
+        let mut cpu = MOS6502::new(ram, false, None, None);
 
         let program = vec![
             0xa2,    // LDX, immediate
@@ -65,7 +67,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false, None);
+        let mut cpu = MOS6502::new(ram, false, None, None);
 
         let value_to_store: u8 = 0xe5;
         let value_to_add: u8 = 0x01;
@@ -94,7 +96,7 @@ mod tests {
         let cycles_to_run = 6;
 
         let ram = Ram::new(1024 * 64);
-        let mut cpu = MOS6502::new(ram, false, None);
+        let mut cpu = MOS6502::new(ram, false, None, None);
 
         let value_to_store: u8 = 0xe5;
         let value_to_subtract: u8 = 0x02;
@@ -113,6 +115,56 @@ mod tests {
 
         cpu.set_program_counter(program_start);
         cpu.run_for_cycles(cycles_to_run);
+        assert_eq!(cpu.cycles(), cycles_to_run);
+        assert_eq!(
+            cpu.accumulator(),
+            value_to_store.wrapping_sub(value_to_subtract)
+        );
+    }
+
+    #[test]
+    fn threaded_test() {
+        let program_start: u16 = 0xff0c;
+        let cycles_to_run = 6;
+
+        let ram = Ram::new(1024 * 64);
+
+        let (control_sender, control_receiver) = mpsc::channel();
+        let (event_sender, event_receiver) = mpsc::channel();
+
+        let mut cpu = MOS6502::new(ram, true, Some(event_sender), Some(control_receiver));
+
+        let value_to_store: u8 = 0xe5;
+        let value_to_subtract: u8 = 0x02;
+
+        let program = vec![
+            0xa2,              // LDX, immediate
+            value_to_store,    // E5
+            0x8a,              // TXA
+            0xe9,              // SBC, immediate
+            value_to_subtract, // Value to subtract
+        ];
+
+        for (i, byte) in program.iter().enumerate() {
+            cpu.write_to_bus(program_start + i as u16, *byte);
+        }
+
+        cpu.set_program_counter(program_start);
+
+        cpu.run_for_cycles(cycles_to_run);
+
+        let event_thread = thread::spawn(move || {
+            while let Ok(msg) = event_receiver.recv() {
+                match msg {
+                    CpuEvent::Read(_) => println!("read"),
+                    CpuEvent::Write(_) => println!("write"),
+                    CpuEvent::RegisterUpdated(_) => println!("reg upd"),
+                }
+            }
+        });
+
+        event_thread.join().unwrap();
+
         assert_eq!(cpu.cycles(), cycles_to_run);
         assert_eq!(
             cpu.accumulator(),
