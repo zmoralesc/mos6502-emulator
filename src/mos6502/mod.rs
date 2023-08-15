@@ -24,38 +24,6 @@ pub trait Bus {
     fn size(&self) -> usize;
 }
 
-pub struct ReadEvent {
-    pub address: u16,
-    pub value: u8,
-}
-
-pub struct WriteEvent {
-    pub address: u16,
-    pub value: u8,
-}
-
-pub enum RegisterUpdateEvent {
-    Accumulator(u8),
-    X(u8),
-    Y(u8),
-    StackPointer(u8),
-    StatusRegister(u8),
-    ProgramCounter(u16),
-}
-
-pub enum CpuControl {
-    Stop,
-    Continue,
-    Pause,
-    Resume,
-}
-
-pub enum CpuEvent {
-    Read(ReadEvent),
-    Write(WriteEvent),
-    RegisterUpdated(RegisterUpdateEvent),
-}
-
 pub const FLAG_NEGATIVE: u8 = 1 << 0;
 pub const FLAG_OVERFLOW: u8 = 1 << 1;
 pub const FLAG_BREAK: u8 = 1 << 3;
