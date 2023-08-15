@@ -454,8 +454,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     pub fn step(&mut self) -> Result<(), EmulationError> {
         let opc = self.read_from_bus(self.program_counter)?;
         let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-        opcode_func(self, address_mode)?;
-        Ok(())
+        opcode_func(self, address_mode)
     }
 
     /// Run CPU for a specific number of cycles
