@@ -38,8 +38,8 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         let old_value = self.accumulator;
         let operand = self.resolve_operand(address_mode)?;
         let value = match operand {
-            OpcodeOperand::Byte(b) => b.wrapping_neg(),
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?.wrapping_neg(),
+            OpcodeOperand::Byte(b) => !b,
+            OpcodeOperand::Address(addr) => !self.read_from_bus(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.increment_cycles(1);
