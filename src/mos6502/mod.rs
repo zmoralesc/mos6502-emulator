@@ -467,8 +467,13 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         }
     }
 
-    pub fn get_memory_snapshot(&mut self) {
-        todo!()
+    pub fn get_memory_snapshot(&mut self) -> Result<Vec<u8>, BusError> {
+        let bus_size = self.bus.size() as u16;
+        let mut vec: Vec<u8> = Vec::new();
+        for i in 0u16..bus_size {
+            vec.push(self.bus.read(i)?)
+        }
+        Ok(vec)
     }
 
     pub fn get_cpu_state(&self) -> CpuState {
