@@ -11,15 +11,15 @@ mod shift_and_rotate_ops;
 mod stack_ops;
 mod transfer_ops;
 
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread::{self, JoinHandle};
+use crate::error::BusError;
+
+use super::error::EmulationError;
 
 pub trait Bus {
     /// Read byte from bus
-    fn read(&self, address: u16) -> u8;
+    fn read(&self, address: u16) -> Result<u8, BusError>;
     /// Write byte to bus
-    fn write(&mut self, address: u16, value: u8);
+    fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
     /// Get bus size in bytes
     fn size(&self) -> usize;
 }
@@ -56,26 +56,6 @@ pub enum CpuEvent {
     RegisterUpdated(RegisterUpdateEvent),
 }
 
-macro_rules! send_event {
-    ($sender:expr, $event:expr) => {
-        if let Some(sender) = $sender.as_ref() {
-            sender.send($event).unwrap();
-        }
-    };
-}
-
-macro_rules! wait_for_continue {
-    ($receiver:expr) => {
-        if let Some(recv) = $receiver.as_ref() {
-            loop {
-                if let CpuControl::Continue = recv.recv().unwrap() {
-                    break;
-                }
-            }
-        }
-    };
-}
-
 pub const FLAG_NEGATIVE: u8 = 1 << 0;
 pub const FLAG_OVERFLOW: u8 = 1 << 1;
 pub const FLAG_BREAK: u8 = 1 << 3;
@@ -89,7 +69,7 @@ const STACK_BASE: u16 = 0x0100;
 const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
 const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 
-type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode);
+type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode) -> Result<(), EmulationError>;
 type OpcodeFunctionArray<T> = [(OpcodeFunction<T>, AddressingMode); 256];
 
 enum OpcodeOperand {
@@ -116,13 +96,13 @@ enum AddressingMode {
 }
 
 pub struct StatusFlags {
-    pub negative_flag: bool,
-    pub overflow_flag: bool,
-    pub break_flag: bool,
-    pub decimal_flag: bool,
-    pub no_interrupts_flag: bool,
-    pub zero_flag: bool,
     pub carry_flag: bool,
+    pub zero_flag: bool,
+    pub no_interrupts_flag: bool,
+    pub decimal_flag: bool,
+    pub break_flag: bool,
+    pub overflow_flag: bool,
+    pub negative_flag: bool,
 }
 
 pub struct CpuState {
@@ -130,13 +110,35 @@ pub struct CpuState {
     pub x_register: u8,
     pub y_register: u8,
     pub stack_pointer: u8,
-    pub status_register: u8,
     pub program_counter: u16,
     pub cycles: u128,
     pub flags: StatusFlags,
 }
 
-pub struct MOS6502<T: Bus + Send + Sync + 'static> {
+impl CpuState {
+    fn from<T: Bus>(cpu: &MOS6502<T>) -> Self {
+        let flags = StatusFlags {
+            carry_flag: cpu.status_register & FLAG_CARRY != 0,
+            zero_flag: cpu.status_register & FLAG_ZERO != 0,
+            no_interrupts_flag: cpu.status_register & FLAG_NO_INTERRUPTS != 0,
+            decimal_flag: cpu.status_register & FLAG_DECIMAL != 0,
+            break_flag: cpu.status_register & FLAG_BREAK != 0,
+            overflow_flag: cpu.status_register & FLAG_OVERFLOW != 0,
+            negative_flag: cpu.status_register & FLAG_NEGATIVE != 0,
+        };
+        CpuState {
+            accumulator: cpu.accumulator,
+            x_register: cpu.x_register,
+            y_register: cpu.y_register,
+            stack_pointer: cpu.stack_pointer,
+            program_counter: cpu.program_counter,
+            cycles: cpu.cycles,
+            flags,
+        }
+    }
+}
+
+pub struct MOS6502<T: Bus> {
     accumulator: u8,
     x_register: u8,
     y_register: u8,
@@ -146,21 +148,11 @@ pub struct MOS6502<T: Bus + Send + Sync + 'static> {
     cycles: u128,
     bus: T,
     opcode_array: OpcodeFunctionArray<T>,
-    emit_events: bool,
-    event_sender: Option<Sender<CpuEvent>>,
-    control_receiver: Option<Receiver<CpuControl>>,
 }
-
-unsafe impl<T: Bus + Send + Sync> Send for MOS6502<T> {}
-unsafe impl<T: Bus + Send + Sync> Sync for MOS6502<T> {}
 
 impl<T: Bus + Send + Sync> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new(
-        bus: T,
-        emit_events: bool,
-        control_receiver: Option<Receiver<CpuControl>>,
-    ) -> MOS6502<T> {
+    pub fn new(bus: T) -> MOS6502<T> {
         let opcode_array: OpcodeFunctionArray<T> = [
             (MOS6502::brk, AddressingMode::Implied),             // 00
             (MOS6502::ora, AddressingMode::XIndexIndirect),      // 01
@@ -430,66 +422,34 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             cycles: u128::MIN,
             bus,
             opcode_array,
-            emit_events,
-            event_sender: None,
-            control_receiver,
         }
     }
 
-    fn not_implemented(&mut self, _: AddressingMode) {
-        panic!("Opcode not implemented.")
+    fn not_implemented(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
+        Err(EmulationError::OpcodeNotImplemented)
     }
 
-    pub fn read_from_bus(&self, address: u16) -> u8 {
-        let value = self.bus.read(address);
-        send_event!(
-            self.event_sender,
-            CpuEvent::Read(ReadEvent { address, value })
-        );
-        wait_for_continue!(self.control_receiver);
-        value
+    pub fn read_from_bus(&self, address: u16) -> Result<u8, EmulationError> {
+        Ok(self.bus.read(address)?)
     }
 
-    pub fn write_to_bus(&mut self, address: u16, value: u8) {
-        self.bus.write(address, value);
-        send_event!(
-            self.event_sender,
-            CpuEvent::Write(WriteEvent { address, value })
-        );
-        wait_for_continue!(self.control_receiver);
+    pub fn write_to_bus(&mut self, address: u16, value: u8) -> Result<(), EmulationError> {
+        Ok(self.bus.write(address, value)?)
     }
 
     /// Change value of program counter
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::ProgramCounter(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     /// Change value of stack pointer
     pub fn set_stack_pointer(&mut self, value: u8) {
         self.stack_pointer = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::StackPointer(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     /// Change value of status register
     pub fn set_status_register(&mut self, value: u8) {
         self.status_register = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::StatusRegister(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     /// Return number of elapsed CPU cycles
@@ -498,48 +458,40 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     }
 
     /// Start CPU
-    pub fn run(mut self) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
-        let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
-        if self.emit_events {
-            self.event_sender = Some(sender);
+    pub fn run(&mut self) -> Result<(), EmulationError> {
+        let mut opc: u8;
+        loop {
+            opc = self.read_from_bus(self.program_counter)?;
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+            opcode_func(self, address_mode)?;
         }
-        let t = thread::spawn(move || {
-            let mut opc: u8;
-            loop {
-                if let Some(receiver) = self.control_receiver.as_ref() {
-                    match receiver.recv().unwrap() {
-                        CpuControl::Stop => break,
-                        CpuControl::Continue => (),
-                        _ => (),
-                    }
-                }
-                opc = self.read_from_bus(self.program_counter);
-                let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-                opcode_func(&mut self, address_mode);
-            }
-            self.event_sender = None;
-            self
-        });
-        (t, receiver)
+    }
+
+    pub fn get_memory_snapshot(&mut self) {
+        todo!()
+    }
+
+    pub fn get_cpu_state(&self) -> CpuState {
+        CpuState::from(self)
+    }
+
+    /// Step over one CPU instruction
+    pub fn step(&mut self) -> Result<(), EmulationError> {
+        let opc = self.read_from_bus(self.program_counter)?;
+        let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+        opcode_func(self, address_mode)?;
+        Ok(())
     }
 
     /// Run CPU for a specific number of cycles
-    pub fn run_for_cycles(mut self, cycles: u128) -> (JoinHandle<MOS6502<T>>, Receiver<CpuEvent>) {
-        let (sender, receiver): (Sender<CpuEvent>, Receiver<CpuEvent>) = mpsc::channel();
-        if self.emit_events {
-            self.event_sender = Some(sender);
+    pub fn run_for_cycles(&mut self, cycles: u128) -> Result<(), EmulationError> {
+        let mut opc: u8;
+        while self.cycles < cycles {
+            opc = self.read_from_bus(self.program_counter)?;
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+            opcode_func(self, address_mode)?;
         }
-        let t = thread::spawn(move || {
-            let mut opc: u8;
-            while self.cycles < cycles {
-                opc = self.read_from_bus(self.program_counter);
-                let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-                opcode_func(&mut self, address_mode);
-            }
-            self.event_sender = None;
-            self
-        });
-        (t, receiver)
+        Ok(())
     }
 
     /// Check if specified flag is set
@@ -553,12 +505,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
     fn set_accumulator(&mut self, value: u8) {
         self.accumulator = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::Accumulator(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     pub fn x_register(&self) -> u8 {
@@ -567,12 +513,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
     fn set_x_register(&mut self, value: u8) {
         self.x_register = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::X(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     pub fn y_register(&self) -> u8 {
@@ -581,12 +521,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
     fn set_y_register(&mut self, value: u8) {
         self.y_register = value;
-
-        send_event!(
-            self.event_sender,
-            CpuEvent::RegisterUpdated(RegisterUpdateEvent::Y(value))
-        );
-        wait_for_continue!(self.control_receiver);
     }
 
     fn increment_program_counter(&mut self, n: u16) {
@@ -607,28 +541,31 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     }
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
-    fn resolve_operand(&mut self, address_mode: AddressingMode) -> OpcodeOperand {
+    fn resolve_operand(
+        &mut self,
+        address_mode: AddressingMode,
+    ) -> Result<OpcodeOperand, EmulationError> {
         match address_mode {
             AddressingMode::Accumulator => {
                 self.increment_cycles(1);
-                OpcodeOperand::Byte(self.accumulator)
+                Ok(OpcodeOperand::Byte(self.accumulator))
             }
             AddressingMode::Absolute => {
                 self.increment_program_counter(1);
-                let low_byte: u8 = self.read_from_bus(self.program_counter);
+                let low_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
-                let high_byte: u8 = self.read_from_bus(self.program_counter);
+                let high_byte: u8 = self.read_from_bus(self.program_counter)?;
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
                 self.increment_cycles(3);
-                OpcodeOperand::Address(addr)
+                Ok(OpcodeOperand::Address(addr))
             }
             AddressingMode::AbsoluteXIndex => {
                 self.increment_program_counter(1);
-                let low_byte: u8 = self.read_from_bus(self.program_counter);
+                let low_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
-                let high_byte: u8 = self.read_from_bus(self.program_counter);
+                let high_byte: u8 = self.read_from_bus(self.program_counter)?;
 
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.x_register as u16);
@@ -641,13 +578,13 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                 }
 
                 self.increment_cycles(3);
-                OpcodeOperand::Address(addr)
+                Ok(OpcodeOperand::Address(addr))
             }
             AddressingMode::AbsoluteYIndex => {
                 self.increment_program_counter(1);
-                let low_byte: u8 = self.read_from_bus(self.program_counter);
+                let low_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
-                let high_byte: u8 = self.read_from_bus(self.program_counter);
+                let high_byte: u8 = self.read_from_bus(self.program_counter)?;
 
                 let mut addr =
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16);
@@ -660,57 +597,61 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                 }
 
                 self.increment_cycles(3);
-                OpcodeOperand::Address(addr)
+                Ok(OpcodeOperand::Address(addr))
             }
             AddressingMode::Immediate => {
                 self.increment_program_counter(1);
-                let byte: u8 = self.read_from_bus(self.program_counter);
+                let byte: u8 = self.read_from_bus(self.program_counter)?;
 
                 self.increment_cycles(1);
-                OpcodeOperand::Byte(byte)
+                Ok(OpcodeOperand::Byte(byte))
             }
-            AddressingMode::Implied => OpcodeOperand::None,
+            AddressingMode::Implied => Ok(OpcodeOperand::None),
             AddressingMode::Indirect => {
                 self.increment_program_counter(1);
-                let mut low_byte: u8 = self.read_from_bus(self.program_counter);
+                let mut low_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
-                let mut high_byte: u8 = self.read_from_bus(self.program_counter);
+                let mut high_byte: u8 = self.read_from_bus(self.program_counter)?;
 
                 let addr = u16::from_le_bytes([low_byte, high_byte]);
 
-                low_byte = self.read_from_bus(addr);
-                high_byte = self.read_from_bus(addr.wrapping_add(1));
+                low_byte = self.read_from_bus(addr)?;
+                high_byte = self.read_from_bus(addr.wrapping_add(1))?;
 
                 self.increment_cycles(2);
-                OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
+                Ok(OpcodeOperand::Address(u16::from_le_bytes([
+                    low_byte, high_byte,
+                ])))
             }
             AddressingMode::XIndexIndirect => {
                 self.increment_program_counter(1);
-                let mut zp_addr: u8 = self.read_from_bus(self.program_counter);
+                let mut zp_addr: u8 = self.read_from_bus(self.program_counter)?;
 
                 zp_addr = zp_addr.wrapping_add(self.x_register);
 
-                let low_byte = self.read_from_bus(zp_addr as u16);
-                let high_byte = self.read_from_bus(zp_addr.wrapping_add(1) as u16);
+                let low_byte = self.read_from_bus(zp_addr as u16)?;
+                let high_byte = self.read_from_bus(zp_addr.wrapping_add(1) as u16)?;
 
                 self.increment_cycles(6);
-                OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]))
+                Ok(OpcodeOperand::Address(u16::from_le_bytes([
+                    low_byte, high_byte,
+                ])))
             }
             AddressingMode::IndirectYIndex => {
                 self.increment_program_counter(1);
-                let zp_addr = self.read_from_bus(self.program_counter);
+                let zp_addr = self.read_from_bus(self.program_counter)?;
 
-                let low_byte = self.read_from_bus(zp_addr as u16);
-                let high_byte = self.read_from_bus(zp_addr.wrapping_add(1) as u16);
+                let low_byte = self.read_from_bus(zp_addr as u16)?;
+                let high_byte = self.read_from_bus(zp_addr.wrapping_add(1) as u16)?;
 
                 self.increment_cycles(6);
-                OpcodeOperand::Address(
+                Ok(OpcodeOperand::Address(
                     u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16),
-                )
+                ))
             }
             AddressingMode::Relative => {
                 self.increment_program_counter(1);
-                let offset_byte = self.read_from_bus(self.program_counter);
+                let offset_byte = self.read_from_bus(self.program_counter)?;
 
                 let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
                 let is_negative = offset_byte & NEGATIVE_BIT_MASK != 0;
@@ -722,36 +663,36 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                         .wrapping_add((offset_magnitude as u16).wrapping_neg())
                 };
 
-                OpcodeOperand::Address(addr)
+                Ok(OpcodeOperand::Address(addr))
             }
             AddressingMode::Zeropage => {
                 self.increment_program_counter(1);
-                let zp_addr = self.read_from_bus(self.program_counter);
+                let zp_addr = self.read_from_bus(self.program_counter)?;
 
                 self.increment_cycles(2);
-                OpcodeOperand::Address(zp_addr as u16)
+                Ok(OpcodeOperand::Address(zp_addr as u16))
             }
             AddressingMode::ZeropageXIndex => {
                 self.increment_program_counter(1);
 
                 let offset = self.x_register;
-                let zp_addr = self.read_from_bus(self.program_counter);
+                let zp_addr = self.read_from_bus(self.program_counter)?;
 
                 let addr = zp_addr.wrapping_add(offset);
                 self.increment_cycles(3);
 
-                OpcodeOperand::Address(addr as u16)
+                Ok(OpcodeOperand::Address(addr as u16))
             }
             AddressingMode::ZeropageYIndex => {
                 self.increment_program_counter(1);
 
                 let offset = self.y_register;
-                let zp_addr = self.read_from_bus(self.program_counter);
+                let zp_addr = self.read_from_bus(self.program_counter)?;
 
                 let addr = zp_addr.wrapping_add(offset);
                 self.increment_cycles(3);
 
-                OpcodeOperand::Address(addr as u16)
+                Ok(OpcodeOperand::Address(addr as u16))
             }
         }
     }

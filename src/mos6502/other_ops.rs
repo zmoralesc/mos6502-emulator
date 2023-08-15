@@ -1,14 +1,15 @@
 use super::*;
 
 impl<T: Bus + Send + Sync> MOS6502<T> {
-    pub(super) fn nop(&mut self, _: AddressingMode) {
+    pub(super) fn nop(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
         self.increment_cycles(2);
+        Ok(())
     }
 
-    pub(super) fn bit(&mut self, address_mode: AddressingMode) {
-        let operand = match self.resolve_operand(address_mode) {
-            OpcodeOperand::Address(w) => self.read_from_bus(w),
-            _ => panic!("Invalid addressing mode."),
+    pub(super) fn bit(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+        let operand = match self.resolve_operand(address_mode)? {
+            OpcodeOperand::Address(w) => self.read_from_bus(w)?,
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
 
         self.flag_toggle(FLAG_NEGATIVE, operand & (1 << 7) != 0);
@@ -16,5 +17,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, operand & self.accumulator != 0);
 
         self.increment_cycles(1);
+        Ok(())
     }
 }

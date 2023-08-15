@@ -2,11 +2,11 @@ use super::*;
 use std::cmp::Ordering;
 
 impl<T: Bus + Send + Sync> MOS6502<T> {
-    pub(super) fn cmp(&mut self, address_mode: AddressingMode) {
-        let operand: u8 = match self.resolve_operand(address_mode) {
+    pub(super) fn cmp(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+        let operand: u8 = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.read_from_bus(w),
-            _ => panic!("Invalid addressing mode."),
+            OpcodeOperand::Address(w) => self.read_from_bus(w)?,
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
 
         self.increment_cycles(1);
@@ -27,13 +27,14 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
+        Ok(())
     }
 
-    pub(super) fn cpx(&mut self, address_mode: AddressingMode) {
-        let operand: u8 = match self.resolve_operand(address_mode) {
+    pub(super) fn cpx(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+        let operand: u8 = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.read_from_bus(w),
-            _ => panic!("Invalid addressing mode."),
+            OpcodeOperand::Address(w) => self.read_from_bus(w)?,
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
 
         self.increment_cycles(1);
@@ -54,13 +55,14 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
+        Ok(())
     }
 
-    pub(super) fn cpy(&mut self, address_mode: AddressingMode) {
-        let operand: u8 = match self.resolve_operand(address_mode) {
+    pub(super) fn cpy(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+        let operand: u8 = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(w) => self.read_from_bus(w),
-            _ => panic!("Invalid addressing mode."),
+            OpcodeOperand::Address(w) => self.read_from_bus(w)?,
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
 
         self.increment_cycles(1);
@@ -81,5 +83,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, true);
             }
         }
+        Ok(())
     }
 }

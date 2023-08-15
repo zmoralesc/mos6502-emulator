@@ -1,16 +1,16 @@
+use crate::error::EmulationError;
+
 use super::*;
 
 impl<T: Bus + Send + Sync> MOS6502<T> {
     // add to accumulator with carry
-    pub(super) fn adc(&mut self, address_mode: AddressingMode) {
+    pub(super) fn adc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode);
+        let operand = self.resolve_operand(address_mode)?;
         let value = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr),
-            _ => {
-                panic!("Invalid addressing mode for ADC");
-            }
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.increment_cycles(1);
 
@@ -31,17 +31,16 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.flag_toggle(FLAG_OVERFLOW, overflow);
 
         self.increment_program_counter(1);
+        Ok(())
     }
 
-    pub(super) fn sbc(&mut self, address_mode: AddressingMode) {
+    pub(super) fn sbc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode);
+        let operand = self.resolve_operand(address_mode)?;
         let value = match operand {
             OpcodeOperand::Byte(b) => b.wrapping_neg(),
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr).wrapping_neg(),
-            _ => {
-                panic!("Invalid addressing mode for ADC");
-            }
+            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?.wrapping_neg(),
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.increment_cycles(1);
 
@@ -62,5 +61,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.flag_toggle(FLAG_OVERFLOW, overflow);
 
         self.increment_program_counter(1);
+        Ok(())
     }
 }
