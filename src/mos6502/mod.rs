@@ -85,7 +85,7 @@ pub struct CpuState {
 }
 
 impl CpuState {
-    fn from<T: Bus + Send + Sync>(cpu: &MOS6502<T>) -> Self {
+    fn from<T: Bus + Send + Sync>(cpu: &MOS6502<T>) -> Result<Self, BusError> {
         let flags = StatusFlags {
             carry_flag: cpu.status_register & FLAG_CARRY != 0,
             zero_flag: cpu.status_register & FLAG_ZERO != 0,
@@ -95,7 +95,7 @@ impl CpuState {
             overflow_flag: cpu.status_register & FLAG_OVERFLOW != 0,
             negative_flag: cpu.status_register & FLAG_NEGATIVE != 0,
         };
-        CpuState {
+        Ok(CpuState {
             accumulator: cpu.accumulator,
             x_register: cpu.x_register,
             y_register: cpu.y_register,
@@ -103,8 +103,8 @@ impl CpuState {
             program_counter: cpu.program_counter,
             cycles: cpu.cycles,
             flags,
-            memory_snapshot: cpu.get_memory_snapshot().unwrap(),
-        }
+            memory_snapshot: cpu.get_memory_snapshot()?,
+        })
     }
 }
 
@@ -446,7 +446,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         Ok(vec)
     }
 
-    pub fn get_cpu_state(&self) -> CpuState {
+    pub fn get_cpu_state(&self) -> Result<CpuState, BusError> {
         CpuState::from(self)
     }
 
