@@ -412,16 +412,6 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.program_counter = value;
     }
 
-    /// Change value of stack pointer
-    pub fn set_stack_pointer(&mut self, value: u8) {
-        self.stack_pointer = value;
-    }
-
-    /// Change value of status register
-    pub fn set_status_register(&mut self, value: u8) {
-        self.status_register = value;
-    }
-
     /// Return number of elapsed CPU cycles
     pub fn cycles(&self) -> u128 {
         self.cycles
@@ -477,24 +467,12 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.accumulator
     }
 
-    fn set_accumulator(&mut self, value: u8) {
-        self.accumulator = value;
-    }
-
     pub fn x_register(&self) -> u8 {
         self.x_register
     }
 
-    fn set_x_register(&mut self, value: u8) {
-        self.x_register = value;
-    }
-
     pub fn y_register(&self) -> u8 {
         self.y_register
-    }
-
-    fn set_y_register(&mut self, value: u8) {
-        self.y_register = value;
     }
 
     fn increment_program_counter(&mut self, n: u16) {

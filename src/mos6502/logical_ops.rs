@@ -7,7 +7,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             OpcodeOperand::Address(w) => self.read_from_bus(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        self.set_accumulator(operand & self.accumulator);
+        self.accumulator &= operand;
         self.increment_program_counter(1);
         Ok(())
     }
@@ -18,7 +18,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             OpcodeOperand::Address(w) => self.read_from_bus(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        self.set_accumulator(operand ^ self.accumulator);
+        self.accumulator ^= operand;
         self.increment_program_counter(1);
         Ok(())
     }
@@ -29,7 +29,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             OpcodeOperand::Address(w) => self.read_from_bus(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        self.set_accumulator(operand | self.accumulator);
+        self.accumulator |= operand;
         self.increment_program_counter(1);
         Ok(())
     }

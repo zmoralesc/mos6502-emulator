@@ -16,11 +16,10 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
         let sign_bits_match: bool = ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) == 0;
 
-        self.set_accumulator(
-            self.accumulator
-                .wrapping_add(value)
-                .wrapping_add(self.flag_check(FLAG_CARRY) as u8),
-        );
+        self.accumulator = self
+            .accumulator
+            .wrapping_add(value)
+            .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
 
         let overflow: bool =
             sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
@@ -46,11 +45,10 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
 
         let sign_bits_match: bool = ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) == 0;
 
-        self.set_accumulator(
-            self.accumulator
-                .wrapping_add(value)
-                .wrapping_add(self.flag_check(FLAG_CARRY) as u8),
-        );
+        self.accumulator = self
+            .accumulator
+            .wrapping_add(value)
+            .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
 
         let overflow: bool =
             sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
