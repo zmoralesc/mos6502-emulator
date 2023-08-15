@@ -5,9 +5,7 @@ macro_rules! store_register_value {
         let operand = $cpu.resolve_operand($address_mode)?;
         let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode.");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
         $cpu.increment_cycles(1);
         $cpu.write_to_bus(addr, $register)?;
@@ -23,9 +21,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.set_accumulator(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
-            _ => {
-                panic!("Invalid addressing mode for LDA");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         });
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
@@ -41,9 +37,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.set_x_register(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
-            _ => {
-                panic!("Invalid addressing mode for LDX");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         });
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
@@ -59,9 +53,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         self.set_y_register(match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
-            _ => {
-                panic!("Invalid addressing mode for LDY");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         });
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);

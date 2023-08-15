@@ -4,9 +4,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn dec(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let addr = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode for DEC");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
         let value = self.read_from_bus(addr)?.wrapping_sub(1);
         self.write_to_bus(addr, value)?;
@@ -41,9 +39,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
     pub(super) fn inc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let addr = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => {
-                panic!("Invalid addressing mode for INC");
-            }
+            _ => return Err(EmulationError::InvalidAddressingMode),
         };
         let value = self.read_from_bus(addr)?.wrapping_add(1);
         self.write_to_bus(addr, value)?;
