@@ -81,10 +81,11 @@ pub struct CpuState {
     pub program_counter: u16,
     pub cycles: u128,
     pub flags: StatusFlags,
+    pub memory_snapshot: Vec<u8>,
 }
 
 impl CpuState {
-    fn from<T: Bus>(cpu: &MOS6502<T>) -> Self {
+    fn from<T: Bus + Send + Sync>(cpu: &MOS6502<T>) -> Self {
         let flags = StatusFlags {
             carry_flag: cpu.status_register & FLAG_CARRY != 0,
             zero_flag: cpu.status_register & FLAG_ZERO != 0,
@@ -102,6 +103,7 @@ impl CpuState {
             program_counter: cpu.program_counter,
             cycles: cpu.cycles,
             flags,
+            memory_snapshot: cpu.get_memory_snapshot().unwrap(),
         }
     }
 }
@@ -435,7 +437,7 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
         }
     }
 
-    pub fn get_memory_snapshot(&mut self) -> Result<Vec<u8>, BusError> {
+    pub fn get_memory_snapshot(&self) -> Result<Vec<u8>, BusError> {
         let bus_size = self.bus.size() as u16;
         let mut vec: Vec<u8> = Vec::new();
         for i in 0u16..bus_size {
