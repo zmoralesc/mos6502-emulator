@@ -11,9 +11,7 @@ mod shift_and_rotate_ops;
 mod stack_ops;
 mod transfer_ops;
 
-use crate::error::BusError;
-
-use super::error::EmulationError;
+use crate::error::*;
 
 pub trait Bus {
     /// Read byte from bus
