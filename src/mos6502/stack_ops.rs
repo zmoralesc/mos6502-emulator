@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     pub(super) fn pha(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
         let target_address: u16 = STACK_BASE + self.stack_pointer as u16;
         self.write_to_bus(target_address, self.accumulator)?;

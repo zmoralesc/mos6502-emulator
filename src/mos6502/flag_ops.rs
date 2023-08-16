@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     pub(super) fn clc(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
         self.flag_toggle(FLAG_CARRY, false);
         self.increment_cycles(2);

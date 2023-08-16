@@ -1,6 +1,6 @@
 use super::*;
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     pub(super) fn dec(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let addr = match self.resolve_operand(address_mode)? {
             OpcodeOperand::Address(addr) => addr,

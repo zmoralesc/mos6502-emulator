@@ -13,7 +13,7 @@ macro_rules! store_register_value {
     };
 }
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     // load value into accumulator
     pub(super) fn lda(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         self.increment_cycles(1);

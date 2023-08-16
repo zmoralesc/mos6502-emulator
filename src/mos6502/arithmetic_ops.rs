@@ -2,7 +2,7 @@ use crate::error::EmulationError;
 
 use super::*;
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     // add to accumulator with carry
     pub(super) fn adc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
         let old_value = self.accumulator;

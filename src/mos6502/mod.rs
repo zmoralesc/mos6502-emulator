@@ -85,7 +85,7 @@ pub struct CpuState {
 }
 
 impl CpuState {
-    fn from<T: Bus + Send + Sync>(cpu: &MOS6502<T>) -> Result<Self, BusError> {
+    fn from<T: Bus>(cpu: &MOS6502<T>) -> Result<Self, BusError> {
         let flags = StatusFlags {
             carry_flag: cpu.status_register & FLAG_CARRY != 0,
             zero_flag: cpu.status_register & FLAG_ZERO != 0,
@@ -120,7 +120,7 @@ pub struct MOS6502<T: Bus> {
     opcode_array: OpcodeFunctionArray<T>,
 }
 
-impl<T: Bus + Send + Sync> MOS6502<T> {
+impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
     pub fn new(bus: T) -> Result<MOS6502<T>, EmulationError> {
         let opcode_array: OpcodeFunctionArray<T> = [
