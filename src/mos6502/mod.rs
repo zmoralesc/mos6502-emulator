@@ -122,7 +122,7 @@ pub struct MOS6502<T: Bus> {
 
 impl<T: Bus + Send + Sync> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new(bus: T) -> MOS6502<T> {
+    pub fn new(bus: T) -> Result<MOS6502<T>, EmulationError> {
         let opcode_array: OpcodeFunctionArray<T> = [
             (MOS6502::brk, AddressingMode::Implied),             // 00
             (MOS6502::ora, AddressingMode::XIndexIndirect),      // 01
@@ -382,17 +382,23 @@ impl<T: Bus + Send + Sync> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // FF
         ];
 
-        MOS6502 {
+        // read address at reset vector for initial PC value
+        let starting_address_lo = bus.read(0xFFFC)?;
+        let starting_address_hi = bus.read(0xFFFD)?;
+
+        let program_counter = u16::from_le_bytes([starting_address_lo, starting_address_hi]);
+
+        Ok(MOS6502 {
             accumulator: u8::MIN,
             x_register: u8::MIN,
             y_register: u8::MIN,
-            program_counter: u16::MIN,
+            program_counter,
             stack_pointer: u8::MAX,
             status_register: u8::MIN,
             cycles: u128::MIN,
             bus,
             opcode_array,
-        }
+        })
     }
 
     fn not_implemented(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
