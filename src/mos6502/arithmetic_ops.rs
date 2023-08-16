@@ -29,7 +29,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
         self.flag_toggle(FLAG_OVERFLOW, overflow);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -58,7 +57,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_CARRY, self.accumulator < old_value);
         self.flag_toggle(FLAG_OVERFLOW, overflow);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 }

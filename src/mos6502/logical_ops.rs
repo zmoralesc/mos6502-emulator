@@ -8,7 +8,6 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator &= operand;
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -19,7 +18,6 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator ^= operand;
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -30,7 +28,6 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator |= operand;
-        self.increment_program_counter(1);
         Ok(())
     }
 }

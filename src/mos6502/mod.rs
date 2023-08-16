@@ -421,16 +421,6 @@ impl<T: Bus> MOS6502<T> {
         self.cycles
     }
 
-    /// Start CPU
-    pub fn run(&mut self) -> Result<(), EmulationError> {
-        let mut opc: u8;
-        loop {
-            opc = self.read_from_bus(self.program_counter)?;
-            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-            opcode_func(self, address_mode)?;
-        }
-    }
-
     pub fn get_memory_snapshot(&self) -> Result<Vec<u8>, BusError> {
         let bus_size = self.bus.size() as u16;
         let mut vec: Vec<u8> = Vec::new();
@@ -448,7 +438,9 @@ impl<T: Bus> MOS6502<T> {
     pub fn step(&mut self) -> Result<(), EmulationError> {
         let opc = self.read_from_bus(self.program_counter)?;
         let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-        opcode_func(self, address_mode)
+        let result = opcode_func(self, address_mode);
+        self.increment_program_counter(1);
+        result
     }
 
     /// Run CPU for a specific number of cycles
@@ -458,8 +450,20 @@ impl<T: Bus> MOS6502<T> {
             opc = self.read_from_bus(self.program_counter)?;
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode)?;
+            self.increment_program_counter(1);
         }
         Ok(())
+    }
+
+    /// Start CPU
+    pub fn run(&mut self) -> Result<(), EmulationError> {
+        let mut opc: u8;
+        loop {
+            opc = self.read_from_bus(self.program_counter)?;
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+            opcode_func(self, address_mode)?;
+            self.increment_program_counter(1);
+        }
     }
 
     /// Check if specified flag is set

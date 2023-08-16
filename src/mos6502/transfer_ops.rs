@@ -9,7 +9,6 @@ macro_rules! store_register_value {
         };
         $cpu.increment_cycles(1);
         $cpu.write_to_bus(addr, $register)?;
-        $cpu.increment_program_counter(1);
     };
 }
 
@@ -26,7 +25,6 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -42,7 +40,6 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -58,7 +55,6 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -88,7 +84,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -100,7 +95,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, self.y_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -112,7 +106,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, self.x_register == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -124,7 +117,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -133,7 +125,6 @@ impl<T: Bus> MOS6502<T> {
         self.increment_cycles(2);
         self.stack_pointer = self.x_register;
 
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -145,7 +136,6 @@ impl<T: Bus> MOS6502<T> {
         self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
 
-        self.increment_program_counter(1);
         Ok(())
     }
 }

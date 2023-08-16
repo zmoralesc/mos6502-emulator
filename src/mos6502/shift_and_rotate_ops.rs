@@ -21,7 +21,6 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -42,7 +41,6 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.flag_toggle(FLAG_CARRY, false);
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -67,7 +65,6 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }
-        self.increment_program_counter(1);
         Ok(())
     }
 
@@ -92,7 +89,6 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }
-        self.increment_program_counter(1);
         Ok(())
     }
 }
