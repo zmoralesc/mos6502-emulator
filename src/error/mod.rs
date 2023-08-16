@@ -16,4 +16,6 @@ pub enum BusError {
     InvalidRead(u16),
     #[error("attempted invalid write at address {0}")]
     InvalidWrite(u16),
+    #[error("attempted write on read-only address {0}")]
+    ReadOnlyAddress(u16),
 }
