@@ -380,17 +380,11 @@ impl<T: Bus> MOS6502<T> {
             (MOS6502::not_implemented, AddressingMode::Implied), // FF
         ];
 
-        // read address at reset vector for initial PC value
-        let starting_address_lo = bus.read(0xFFFC)?;
-        let starting_address_hi = bus.read(0xFFFD)?;
-
-        let program_counter = u16::from_le_bytes([starting_address_lo, starting_address_hi]);
-
         Ok(MOS6502 {
             accumulator: u8::MIN,
             x_register: u8::MIN,
             y_register: u8::MIN,
-            program_counter,
+            program_counter: u16::MIN,
             stack_pointer: u8::MAX,
             status_register: u8::MIN,
             cycles: u128::MIN,
