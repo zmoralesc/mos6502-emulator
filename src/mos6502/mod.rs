@@ -32,7 +32,6 @@ pub const FLAG_CARRY: u8 = 1 << 7;
 
 const STACK_BASE: u16 = 0x0100;
 
-const MAGNITUDE_BIT_MASK: u8 = 0b01111111;
 const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode) -> Result<(), EmulationError>;
@@ -397,20 +396,24 @@ impl<T: Bus> MOS6502<T> {
         Err(EmulationError::OpcodeNotImplemented)
     }
 
+    #[inline]
     pub fn read_from_bus(&self, address: u16) -> Result<u8, EmulationError> {
         Ok(self.bus.read(address)?)
     }
 
+    #[inline]
     pub fn write_to_bus(&mut self, address: u16, value: u8) -> Result<(), EmulationError> {
         Ok(self.bus.write(address, value)?)
     }
 
     /// Change value of program counter
+    #[inline]
     pub fn set_program_counter(&mut self, value: u16) {
         self.program_counter = value;
     }
 
     /// Return number of elapsed CPU cycles
+    #[inline]
     pub fn cycles(&self) -> u128 {
         self.cycles
     }
@@ -432,8 +435,7 @@ impl<T: Bus> MOS6502<T> {
         let opc = self.read_from_bus(self.program_counter)?;
         let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
         self.program_counter = self.program_counter.wrapping_add(1);
-        let result = opcode_func(self, address_mode);
-        result
+        opcode_func(self, address_mode)
     }
 
     /// Run CPU for a specific number of cycles
@@ -460,31 +462,38 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Check if specified flag is set
+    #[inline]
     pub fn flag_check(&self, flag: u8) -> bool {
         self.status_register & flag != 0
     }
 
+    #[inline]
     pub fn accumulator(&self) -> u8 {
         self.accumulator
     }
 
+    #[inline]
     pub fn x_register(&self) -> u8 {
         self.x_register
     }
 
+    #[inline]
     pub fn y_register(&self) -> u8 {
         self.y_register
     }
 
+    #[inline]
     fn increment_program_counter(&mut self, n: u16) {
         self.set_program_counter(self.program_counter.wrapping_add(n));
     }
 
+    #[inline]
     fn increment_cycles(&mut self, n: u128) {
         self.cycles = self.cycles.wrapping_add(n);
     }
 
     /// Turn specified flag on/off
+    #[inline]
     fn flag_toggle(&mut self, f: u8, value: bool) {
         if value {
             self.status_register |= f; // set flag
@@ -494,6 +503,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
+    #[inline]
     fn resolve_operand(
         &mut self,
         address_mode: AddressingMode,
@@ -603,20 +613,26 @@ impl<T: Bus> MOS6502<T> {
                 ))
             }
             AddressingMode::Relative => {
-                let offset_byte = self.read_from_bus(self.program_counter)?;
+                let offset = self.read_from_bus(self.program_counter)?.wrapping_neg();
                 self.increment_program_counter(1);
 
-                let offset_magnitude = offset_byte & MAGNITUDE_BIT_MASK;
-                let is_negative = offset_byte & NEGATIVE_BIT_MASK != 0;
+                // Convert the offset to its two's complement representation
+                let offset_i8 = offset as i8;
 
-                let addr: u16 = if !is_negative {
-                    self.program_counter.wrapping_add(offset_magnitude as u16)
+                // Sign-extend the offset to a 16-bit signed value
+                let sign_extended_offset = if offset_i8 < 0 {
+                    offset_i8 as i16
                 } else {
-                    self.program_counter
-                        .wrapping_add((offset_magnitude as u16).wrapping_neg())
+                    offset_i8 as i16 & 0xFF
                 };
 
-                Ok(OpcodeOperand::Address(addr))
+                // Get the current value of the program counter
+                let pc = self.program_counter;
+
+                // Calculate the new program counter value after branching
+                let new_pc = pc.wrapping_add(sign_extended_offset as u16);
+
+                Ok(OpcodeOperand::Address(new_pc))
             }
             AddressingMode::Zeropage => {
                 let zp_addr = self.read_from_bus(self.program_counter)?;
