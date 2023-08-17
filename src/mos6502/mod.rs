@@ -422,10 +422,9 @@ impl<T: Bus> MOS6502<T> {
     }
 
     pub fn get_memory_snapshot(&self) -> Result<Vec<u8>, BusError> {
-        let bus_size = self.bus.size() as u16;
         let mut vec: Vec<u8> = Vec::new();
-        for i in 0u16..bus_size {
-            vec.push(self.bus.read(i)?)
+        for i in 0..self.bus.size() {
+            vec.push(self.bus.read(i as u16)?)
         }
         Ok(vec)
     }
