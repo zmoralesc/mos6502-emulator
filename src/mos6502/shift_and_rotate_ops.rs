@@ -36,7 +36,7 @@ impl<T: Bus> MOS6502<T> {
                 let new_value: u8 = value.shr(1);
                 self.flag_toggle(FLAG_NEGATIVE, false);
                 self.flag_toggle(FLAG_ZERO, new_value == 0);
-                self.write_to_bus(w, value)?;
+                self.write_to_bus(w, new_value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -61,7 +61,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, bit7_is_set);
                 self.flag_toggle(FLAG_ZERO, new_value == 0);
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
-                self.write_to_bus(w, value)?;
+                self.write_to_bus(w, new_value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }
@@ -85,7 +85,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, bit0_is_set);
                 self.flag_toggle(FLAG_ZERO, new_value == 0);
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
-                self.write_to_bus(w, value)?;
+                self.write_to_bus(w, new_value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }

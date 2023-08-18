@@ -34,8 +34,8 @@ macro_rules! transfer_register {
         $cpu.increment_cycles(2);
         $target_register = $source_register;
 
-        $cpu.flag_toggle(FLAG_ZERO, $source_register == 0);
-        $cpu.flag_toggle(FLAG_NEGATIVE, $source_register & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_toggle(FLAG_ZERO, $target_register == 0);
+        $cpu.flag_toggle(FLAG_NEGATIVE, $target_register & NEGATIVE_BIT_MASK != 0);
         return Ok(());
     };
 }
