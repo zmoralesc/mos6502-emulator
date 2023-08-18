@@ -8,6 +8,8 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator &= operand;
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         Ok(())
     }
 
@@ -18,6 +20,8 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator ^= operand;
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         Ok(())
     }
 
@@ -28,6 +32,8 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.accumulator |= operand;
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
         Ok(())
     }
 }

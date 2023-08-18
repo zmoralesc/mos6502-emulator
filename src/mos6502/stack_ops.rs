@@ -25,6 +25,8 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator = self.read_from_bus(target_address)?;
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
         self.increment_cycles(4);
+        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
+        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
         Ok(())
     }
 

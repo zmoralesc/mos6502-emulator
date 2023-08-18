@@ -12,49 +12,47 @@ macro_rules! store_register_value {
     };
 }
 
-impl<T: Bus> MOS6502<T> {
-    // load value into accumulator
-    pub(super) fn lda(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(1);
-        let operand = self.resolve_operand(address_mode)?;
-        self.accumulator = match operand {
+macro_rules! load_value_to_register {
+    ($cpu:expr, $register:expr, $address_mode:ident) => {
+        $cpu.increment_cycles(1);
+        let operand = $cpu.resolve_operand($address_mode)?;
+        $register = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
+            OpcodeOperand::Address(addr) => $cpu.read_from_bus(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
 
-        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_toggle(FLAG_ZERO, $register == 0);
+        $cpu.flag_toggle(FLAG_NEGATIVE, $register & NEGATIVE_BIT_MASK != 0);
+    };
+}
+
+macro_rules! transfer_register {
+    ($cpu:expr, $source_register:expr, $target_register:expr) => {
+        $cpu.increment_cycles(2);
+        $target_register = $source_register;
+
+        $cpu.flag_toggle(FLAG_ZERO, $source_register == 0);
+        $cpu.flag_toggle(FLAG_NEGATIVE, $source_register & NEGATIVE_BIT_MASK != 0);
+    };
+}
+
+impl<T: Bus> MOS6502<T> {
+    // load value into accumulator
+    pub(super) fn lda(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+        load_value_to_register!(self, self.accumulator, address_mode);
         Ok(())
     }
 
     // load value into X register
     pub(super) fn ldx(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(1);
-        let operand = self.resolve_operand(address_mode)?;
-        self.x_register = match operand {
-            OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
-        };
-
-        self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
+        load_value_to_register!(self, self.x_register, address_mode);
         Ok(())
     }
 
     // load value into Y register
     pub(super) fn ldy(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(1);
-        let operand = self.resolve_operand(address_mode)?;
-        self.y_register = match operand {
-            OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
-        };
-
-        self.flag_toggle(FLAG_ZERO, self.y_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
+        load_value_to_register!(self, self.y_register, address_mode);
         Ok(())
     }
 
@@ -78,45 +76,25 @@ impl<T: Bus> MOS6502<T> {
 
     // transfer accumulator to X register
     pub(super) fn tax(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(2);
-        self.x_register = self.accumulator;
-
-        self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
-
+        transfer_register!(self, self.accumulator, self.x_register);
         Ok(())
     }
 
     // transfer accumulator to Y register
     pub(super) fn tay(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(2);
-        self.y_register = self.accumulator;
-
-        self.flag_toggle(FLAG_ZERO, self.y_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.y_register & NEGATIVE_BIT_MASK != 0);
-
+        transfer_register!(self, self.accumulator, self.y_register);
         Ok(())
     }
 
     // transfer stack pointer to X register
     pub(super) fn tsx(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(2);
-        self.x_register = self.stack_pointer;
-
-        self.flag_toggle(FLAG_ZERO, self.x_register == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.x_register & NEGATIVE_BIT_MASK != 0);
-
+        transfer_register!(self, self.stack_pointer, self.x_register);
         Ok(())
     }
 
     // transfer X register to accumulator
     pub(super) fn txa(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(2);
-        self.accumulator = self.x_register;
-
-        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
-
+        transfer_register!(self, self.x_register, self.accumulator);
         Ok(())
     }
 
@@ -130,12 +108,7 @@ impl<T: Bus> MOS6502<T> {
 
     // transfer Y register to accumulator
     pub(super) fn tya(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.increment_cycles(2);
-        self.accumulator = self.y_register;
-
-        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
-
+        transfer_register!(self, self.y_register, self.accumulator);
         Ok(())
     }
 }
