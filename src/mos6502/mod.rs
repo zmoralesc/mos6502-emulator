@@ -615,12 +615,11 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::Relative => {
                 let offset = self.read_from_bus(self.program_counter)?;
-                self.increment_program_counter(1);
 
                 let offset = offset as i8;
-                let new_pc = (self.program_counter as i32 + offset as i32) as u16;
+                let new_pc = (self.program_counter as i16 + offset as i16) as u16;
 
-                Ok(OpcodeOperand::Address(new_pc as u16))
+                Ok(OpcodeOperand::Address(new_pc))
             }
             AddressingMode::Zeropage => {
                 let zp_addr = self.read_from_bus(self.program_counter)?;
