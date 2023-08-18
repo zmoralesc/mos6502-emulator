@@ -419,8 +419,9 @@ impl<T: Bus> MOS6502<T> {
     }
 
     pub fn get_memory_snapshot(&self) -> Result<Vec<u8>, BusError> {
-        let mut vec: Vec<u8> = Vec::new();
-        for i in 0..self.bus.size() {
+        let bus_size = self.bus.size();
+        let mut vec: Vec<u8> = Vec::with_capacity(bus_size);
+        for i in 0..bus_size {
             vec.push(self.bus.read(i as u16)?)
         }
         Ok(vec)
@@ -433,8 +434,8 @@ impl<T: Bus> MOS6502<T> {
     /// Step over one CPU instruction
     pub fn step(&mut self) -> Result<(), EmulationError> {
         let opc = self.read_from_bus(self.program_counter)?;
-        let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
         self.program_counter = self.program_counter.wrapping_add(1);
+        let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
         opcode_func(self, address_mode)
     }
 
@@ -443,8 +444,8 @@ impl<T: Bus> MOS6502<T> {
         let mut opc: u8;
         while self.cycles < cycles {
             opc = self.read_from_bus(self.program_counter)?;
-            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             self.program_counter = self.program_counter.wrapping_add(1);
+            let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode)?;
         }
         Ok(())
@@ -456,8 +457,8 @@ impl<T: Bus> MOS6502<T> {
         loop {
             opc = self.read_from_bus(self.program_counter)?;
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
+            self.program_counter = self.program_counter.wrapping_add(1);
             opcode_func(self, address_mode)?;
-            self.increment_program_counter(1);
         }
     }
 
@@ -613,26 +614,13 @@ impl<T: Bus> MOS6502<T> {
                 ))
             }
             AddressingMode::Relative => {
-                let offset = self.read_from_bus(self.program_counter)?.wrapping_neg();
+                let offset = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                // Convert the offset to its two's complement representation
-                let offset_i8 = offset as i8;
+                let offset = offset as i8;
+                let new_pc = (self.program_counter as i32 + offset as i32) as u16;
 
-                // Sign-extend the offset to a 16-bit signed value
-                let sign_extended_offset = if offset_i8 < 0 {
-                    offset_i8 as i16
-                } else {
-                    offset_i8 as i16 & 0xFF
-                };
-
-                // Get the current value of the program counter
-                let pc = self.program_counter;
-
-                // Calculate the new program counter value after branching
-                let new_pc = pc.wrapping_add(sign_extended_offset as u16);
-
-                Ok(OpcodeOperand::Address(new_pc))
+                Ok(OpcodeOperand::Address(new_pc as u16))
             }
             AddressingMode::Zeropage => {
                 let zp_addr = self.read_from_bus(self.program_counter)?;
@@ -643,8 +631,8 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::ZeropageXIndex => {
                 let offset = self.x_register;
-                let zp_addr = self.read_from_bus(self.program_counter)?;
 
+                let zp_addr = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
 
                 let addr = zp_addr.wrapping_add(offset);
@@ -654,8 +642,8 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::ZeropageYIndex => {
                 let offset = self.y_register;
-                let zp_addr = self.read_from_bus(self.program_counter)?;
 
+                let zp_addr = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
 
                 let addr = zp_addr.wrapping_add(offset);
