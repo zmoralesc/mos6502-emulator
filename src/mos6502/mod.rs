@@ -615,6 +615,7 @@ impl<T: Bus> MOS6502<T> {
             }
             AddressingMode::Relative => {
                 let offset = self.read_from_bus(self.program_counter)?;
+                self.increment_program_counter(1);
 
                 let offset = offset as i8;
                 let new_pc = (self.program_counter as i16 + offset as i16) as u16;
