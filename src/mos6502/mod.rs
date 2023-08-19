@@ -34,6 +34,11 @@ const STACK_BASE: u16 = 0x0100;
 
 const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 
+enum InterruptKind {
+    NMI,
+    IRQ,
+}
+
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode) -> Result<(), EmulationError>;
 type OpcodeFunctionArray<T> = [(OpcodeFunction<T>, AddressingMode); 256];
 
@@ -115,6 +120,8 @@ pub struct MOS6502<T: Bus> {
     cycles: u128,
     bus: T,
     opcode_array: OpcodeFunctionArray<T>,
+    irq: bool,
+    nmi: bool,
 }
 
 impl<T: Bus> MOS6502<T> {
@@ -385,11 +392,65 @@ impl<T: Bus> MOS6502<T> {
             y_register: u8::MIN,
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
-            status_register: u8::MIN,
+            status_register: 1 << 2,
             cycles: u128::MIN,
             bus,
             opcode_array,
+            nmi: false,
+            irq: false,
         })
+    }
+
+    #[inline]
+    fn perform_interrupt(
+        &mut self,
+        return_address: u16,
+        kind: InterruptKind,
+    ) -> Result<(), EmulationError> {
+        let return_address_lo: u8 = (return_address & 0xFF) as u8;
+        let return_address_hi: u8 = ((return_address >> 8) & 0xFF) as u8;
+
+        // push high byte of return address to stack
+        self.write_to_bus(STACK_BASE + self.stack_pointer as u16, return_address_hi)?;
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+
+        // push low byte of return address to stack
+        self.write_to_bus(STACK_BASE + self.stack_pointer as u16, return_address_lo)?;
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+
+        // push SR to stack
+        self.write_to_bus(
+            STACK_BASE + self.stack_pointer as u16,
+            self.status_register | FLAG_BREAK,
+        )?;
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+
+        let vector_address = match kind {
+            InterruptKind::IRQ => 0xFFFA,
+            InterruptKind::NMI => 0xFFFE,
+        };
+
+        let divert_address_lo = self.read_from_bus(vector_address)?;
+        let divert_address_hi = self.read_from_bus(vector_address + 1)?;
+
+        self.set_program_counter(u16::from_le_bytes([divert_address_lo, divert_address_hi]));
+
+        self.increment_cycles(7);
+        Ok(())
+    }
+
+    pub fn handle_interrupts(&mut self) -> Result<(), EmulationError> {
+        if self.nmi {
+            self.nmi = false;
+            self.perform_interrupt(self.program_counter, InterruptKind::NMI)?;
+        }
+        if self.irq {
+            self.irq = false;
+            if !self.flag_check(FLAG_NO_INTERRUPTS) {
+                self.perform_interrupt(self.program_counter, InterruptKind::IRQ)?;
+            }
+        }
+        Ok(())
     }
 
     fn not_implemented(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
@@ -436,7 +497,9 @@ impl<T: Bus> MOS6502<T> {
         let opc = self.read_from_bus(self.program_counter)?;
         self.program_counter = self.program_counter.wrapping_add(1);
         let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
-        opcode_func(self, address_mode)
+        let result = opcode_func(self, address_mode);
+        self.handle_interrupts()?;
+        result
     }
 
     /// Run CPU for a specific number of cycles
@@ -447,6 +510,7 @@ impl<T: Bus> MOS6502<T> {
             self.program_counter = self.program_counter.wrapping_add(1);
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             opcode_func(self, address_mode)?;
+            self.handle_interrupts()?;
         }
         Ok(())
     }
@@ -459,6 +523,7 @@ impl<T: Bus> MOS6502<T> {
             let (ref opcode_func, address_mode) = self.opcode_array[opc as usize];
             self.program_counter = self.program_counter.wrapping_add(1);
             opcode_func(self, address_mode)?;
+            self.handle_interrupts()?;
         }
     }
 
