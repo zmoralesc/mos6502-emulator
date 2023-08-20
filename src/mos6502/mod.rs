@@ -500,8 +500,8 @@ impl<T: Bus> MOS6502<T> {
         self.stack_pointer = self.stack_pointer.wrapping_sub(1);
 
         let vector_address = match kind {
-            InterruptKind::Irq => 0xFFFA,
-            InterruptKind::Nmi => 0xFFFE,
+            InterruptKind::Irq => 0xFFFE,
+            InterruptKind::Nmi => 0xFFFA,
         };
 
         let divert_address_lo = self.read_from_bus(vector_address)?;
