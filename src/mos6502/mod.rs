@@ -75,7 +75,7 @@ pub struct StatusFlags {
     pub negative_flag: bool,
 }
 
-pub struct CpuState {
+pub struct CpuState<'a> {
     pub accumulator: u8,
     pub x_register: u8,
     pub y_register: u8,
@@ -83,11 +83,11 @@ pub struct CpuState {
     pub program_counter: u16,
     pub cycles: u128,
     pub flags: StatusFlags,
-    pub memory_snapshot: Vec<u8>,
+    pub bus: &'a dyn Bus,
 }
 
-impl CpuState {
-    fn from<T: Bus>(cpu: &MOS6502<T>) -> Result<Self, BusError> {
+impl<'a> CpuState<'a> {
+    fn from<T: Bus>(cpu: &'a MOS6502<T>) -> Result<Self, BusError> {
         let flags = StatusFlags {
             carry_flag: cpu.status_register & FLAG_CARRY != 0,
             zero_flag: cpu.status_register & FLAG_ZERO != 0,
@@ -105,7 +105,7 @@ impl CpuState {
             program_counter: cpu.program_counter,
             cycles: cpu.cycles,
             flags,
-            memory_snapshot: cpu.get_memory_snapshot()?,
+            bus: cpu.bus(),
         })
     }
 }
@@ -401,6 +401,10 @@ impl<T: Bus> MOS6502<T> {
         })
     }
 
+    fn bus(&self) -> &dyn Bus {
+        &self.bus
+    }
+
     #[inline]
     fn perform_interrupt(
         &mut self,
@@ -477,15 +481,6 @@ impl<T: Bus> MOS6502<T> {
     #[inline]
     pub fn cycles(&self) -> u128 {
         self.cycles
-    }
-
-    pub fn get_memory_snapshot(&self) -> Result<Vec<u8>, BusError> {
-        let bus_size = self.bus.size();
-        let mut vec: Vec<u8> = Vec::with_capacity(bus_size);
-        for i in 0..bus_size {
-            vec.push(self.bus.read(i as u16)?)
-        }
-        Ok(vec)
     }
 
     pub fn get_cpu_state(&self) -> Result<CpuState, BusError> {
