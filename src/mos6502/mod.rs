@@ -38,8 +38,8 @@ const STACK_BASE: u16 = 0x0100;
 const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 
 enum InterruptKind {
-    NMI,
-    IRQ,
+    Nmi,
+    Irq,
 }
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode) -> Result<(), EmulationError>;
@@ -433,8 +433,8 @@ impl<T: Bus> MOS6502<T> {
         self.stack_pointer = self.stack_pointer.wrapping_sub(1);
 
         let vector_address = match kind {
-            InterruptKind::IRQ => 0xFFFA,
-            InterruptKind::NMI => 0xFFFE,
+            InterruptKind::Irq => 0xFFFA,
+            InterruptKind::Nmi => 0xFFFE,
         };
 
         let divert_address_lo = self.read_from_bus(vector_address)?;
@@ -449,12 +449,12 @@ impl<T: Bus> MOS6502<T> {
     pub fn handle_interrupts(&mut self) -> Result<(), EmulationError> {
         if self.nmi {
             self.nmi = false;
-            self.perform_interrupt(self.program_counter, InterruptKind::NMI)?;
+            self.perform_interrupt(self.program_counter, InterruptKind::Nmi)?;
         }
         if self.irq {
             self.irq = false;
             if !self.flag_check(FLAG_NO_INTERRUPTS) {
-                self.perform_interrupt(self.program_counter, InterruptKind::IRQ)?;
+                self.perform_interrupt(self.program_counter, InterruptKind::Irq)?;
             }
         }
         Ok(())
