@@ -28,6 +28,7 @@ pub trait Bus {
     /// Get bus size in bytes
     fn size(&self) -> usize;
     fn serialize(&self, file: &mut File) -> io::Result<()>;
+    fn deserialize(&mut self, file: &mut File) -> io::Result<()>;
 }
 
 const FLAG_NEGATIVE: u8 = 1 << 7;
