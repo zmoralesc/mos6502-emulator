@@ -11,6 +11,8 @@ mod shift_and_rotate_ops;
 mod stack_ops;
 mod transfer_ops;
 
+use std::{fs::File, io};
+
 use crate::error::*;
 
 pub trait Bus {
@@ -20,6 +22,7 @@ pub trait Bus {
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
     /// Get bus size in bytes
     fn size(&self) -> usize;
+    fn serialize(&self, file: &mut File) -> io::Result<()>;
 }
 
 pub const FLAG_NEGATIVE: u8 = 1 << 7;
