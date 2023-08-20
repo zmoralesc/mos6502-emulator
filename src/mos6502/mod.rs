@@ -158,7 +158,7 @@ impl<T: Bus> SerializableCpu<T> {
             cycles: cpu.cycles,
             irq: cpu.irq,
             nmi: cpu.nmi,
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 }
