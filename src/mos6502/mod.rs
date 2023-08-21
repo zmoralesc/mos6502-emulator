@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
+use std::sync::mpsc::{Receiver, Sender};
 use std::{fs::File, io};
 
 use crate::error::*;
@@ -131,6 +132,7 @@ pub struct MOS6502<T: Bus> {
     opcode_array: OpcodeFunctionArray<T>,
     irq: bool,
     nmi: bool,
+    log_sender: Option<Sender<String>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -427,7 +429,7 @@ fn make_opcode_array<T: Bus>() -> OpcodeFunctionArray<T> {
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new(bus: T) -> Result<Self, EmulationError> {
+    pub fn new(bus: T, log_sender: Option<Sender<String>>) -> Result<Self, EmulationError> {
         Ok(Self {
             accumulator: u8::MIN,
             x_register: u8::MIN,
@@ -440,6 +442,7 @@ impl<T: Bus> MOS6502<T> {
             opcode_array: make_opcode_array(),
             nmi: false,
             irq: false,
+            log_sender,
         })
     }
 
@@ -450,7 +453,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub fn from_file(file: &mut File, bus: T) -> Result<Self, Box<dyn Error>> {
+    pub fn from_file(
+        file: &mut File,
+        bus: T,
+        log_sender: Option<Sender<String>>,
+    ) -> Result<Self, Box<dyn Error>> {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
 
@@ -468,6 +475,7 @@ impl<T: Bus> MOS6502<T> {
             opcode_array: make_opcode_array(),
             nmi: serializable_representation.nmi,
             irq: serializable_representation.irq,
+            log_sender,
         })
     }
 
@@ -533,11 +541,18 @@ impl<T: Bus> MOS6502<T> {
 
     #[inline]
     pub fn read_from_bus(&self, address: u16) -> Result<u8, EmulationError> {
-        Ok(self.bus.read(address)?)
+        let value = self.bus.read(address)?;
+        if let Some(sender) = &self.log_sender {
+            let _ = sender.send(format!("Read {:02X} from {:04X}", value, address));
+        }
+        Ok(value)
     }
 
     #[inline]
     pub fn write_to_bus(&mut self, address: u16, value: u8) -> Result<(), EmulationError> {
+        if let Some(sender) = &self.log_sender {
+            let _ = sender.send(format!("Wrote {:02X} to {:04X}", value, address));
+        }
         Ok(self.bus.write(address, value)?)
     }
 
@@ -661,18 +676,14 @@ impl<T: Bus> MOS6502<T> {
                 let high_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let mut addr =
-                    u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.x_register as u16);
+                let address = u16::from_le_bytes([low_byte, high_byte]);
+                let address_with_offset = address.wrapping_add(self.x_register as u16);
 
-                if self.flag_check(FLAG_CARRY) {
-                    let old_addr = addr;
-                    addr = addr.wrapping_add(1);
-                    // add one more cycle if page boundaries were crossed
-                    self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
-                }
+                // add one more cycle if page boundaries were crossed
+                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u128);
 
                 self.increment_cycles(3);
-                Ok(OpcodeOperand::Address(addr))
+                Ok(OpcodeOperand::Address(address_with_offset))
             }
             AddressingMode::AbsoluteYIndex => {
                 let low_byte: u8 = self.read_from_bus(self.program_counter)?;
@@ -680,18 +691,14 @@ impl<T: Bus> MOS6502<T> {
                 let high_byte: u8 = self.read_from_bus(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let mut addr =
-                    u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16);
+                let address = u16::from_le_bytes([low_byte, high_byte]);
+                let address_with_offset = address.wrapping_add(self.y_register as u16);
 
-                if self.flag_check(FLAG_CARRY) {
-                    let old_addr = addr;
-                    addr = addr.wrapping_add(1);
-                    // add one more cycle if page boundaries were crossed
-                    self.increment_cycles((old_addr & 0xFF00 != addr & 0xFF00) as u128);
-                }
+                // add one more cycle if page boundaries were crossed
+                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u128);
 
                 self.increment_cycles(3);
-                Ok(OpcodeOperand::Address(addr))
+                Ok(OpcodeOperand::Address(address_with_offset))
             }
             AddressingMode::Immediate => {
                 let byte: u8 = self.read_from_bus(self.program_counter)?;
