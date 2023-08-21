@@ -14,7 +14,7 @@ impl<T: Bus> MOS6502<T> {
 
         self.flag_toggle(FLAG_NEGATIVE, operand & (1 << 7) != 0);
         self.flag_toggle(FLAG_OVERFLOW, operand & (1 << 6) != 0);
-        self.flag_toggle(FLAG_ZERO, operand & self.accumulator != 0);
+        self.flag_toggle(FLAG_ZERO, operand & self.accumulator == 0);
 
         self.increment_cycles(1);
         Ok(())
