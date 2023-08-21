@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::{fs::File, io};
 
 use crate::error::*;
