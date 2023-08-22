@@ -21,6 +21,22 @@ use std::{fs::File, io};
 
 use crate::error::*;
 
+#[macro_export]
+macro_rules! push_to_stack {
+    ($cpu:expr, $value:expr) => {
+        $cpu.write_to_bus(STACK_BASE + $cpu.stack_pointer as u16, $value)?;
+        $cpu.stack_pointer = $cpu.stack_pointer.wrapping_sub(1);
+    };
+}
+
+#[macro_export]
+macro_rules! pop_from_stack {
+    ($cpu:expr) => {{
+        $cpu.stack_pointer = $cpu.stack_pointer.wrapping_add(1);
+        $cpu.read_from_bus(STACK_BASE + $cpu.stack_pointer as u16)?
+    }};
+}
+
 pub trait Bus {
     /// Read byte from bus
     fn read(&self, address: u16) -> Result<u8, BusError>;
@@ -493,19 +509,13 @@ impl<T: Bus> MOS6502<T> {
         let return_address_hi: u8 = ((return_address >> 8) & 0xFF) as u8;
 
         // push high byte of return address to stack
-        self.write_to_bus(STACK_BASE + self.stack_pointer as u16, return_address_hi)?;
-        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+        push_to_stack!(self, return_address_hi);
 
         // push low byte of return address to stack
-        self.write_to_bus(STACK_BASE + self.stack_pointer as u16, return_address_lo)?;
-        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+        push_to_stack!(self, return_address_lo);
 
         // push SR to stack
-        self.write_to_bus(
-            STACK_BASE + self.stack_pointer as u16,
-            self.status_register | FLAG_BREAK,
-        )?;
-        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+        push_to_stack!(self, self.status_register | FLAG_BREAK);
 
         let vector_address = match kind {
             InterruptKind::Irq => 0xFFFE,
