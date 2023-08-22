@@ -1,5 +1,3 @@
-use std::ops::{Shl, Shr};
-
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
