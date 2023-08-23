@@ -512,8 +512,8 @@ impl<T: Bus> MOS6502<T> {
         push_to_stack!(self, return_address_lo);
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, self.status_register & !FLAG_BREAK),
-            InterruptKind::Nmi => (0xFFFA, self.status_register | FLAG_BREAK),
+            InterruptKind::Irq => (0xFFFE, self.status_register | FLAG_BREAK),
+            InterruptKind::Nmi => (0xFFFA, self.status_register & !FLAG_BREAK),
         };
 
         push_to_stack!(self, status_register_value);
