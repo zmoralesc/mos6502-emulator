@@ -452,7 +452,7 @@ impl<T: Bus> MOS6502<T> {
             y_register: u8::MIN,
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
-            status_register: 1 << 5,
+            status_register: (1 << 5) | FLAG_BREAK,
             cycles: u128::MIN,
             bus,
             opcode_array: make_opcode_array(),
@@ -508,19 +508,15 @@ impl<T: Bus> MOS6502<T> {
         let return_address_lo: u8 = (return_address & 0xFF) as u8;
         let return_address_hi: u8 = ((return_address >> 8) & 0xFF) as u8;
 
-        // push high byte of return address to stack
         push_to_stack!(self, return_address_hi);
-
-        // push low byte of return address to stack
         push_to_stack!(self, return_address_lo);
 
-        // push SR to stack
-        push_to_stack!(self, self.status_register | FLAG_BREAK);
-
-        let vector_address = match kind {
-            InterruptKind::Irq => 0xFFFE,
-            InterruptKind::Nmi => 0xFFFA,
+        let (vector_address, status_register_value): (u16, u8) = match kind {
+            InterruptKind::Irq => (0xFFFE, self.status_register & !FLAG_BREAK),
+            InterruptKind::Nmi => (0xFFFA, self.status_register | FLAG_BREAK),
         };
+
+        push_to_stack!(self, status_register_value);
 
         let divert_address_lo = self.read_from_bus(vector_address)?;
         let divert_address_hi = self.read_from_bus(vector_address + 1)?;

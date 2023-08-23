@@ -11,7 +11,7 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn rti(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
         // pop SR from stack
-        self.status_register = pop_from_stack!(self);
+        self.status_register = pop_from_stack!(self) | FLAG_BREAK | (1 << 5);
 
         // pop low byte of return address from stack
         let return_address_lo = pop_from_stack!(self);

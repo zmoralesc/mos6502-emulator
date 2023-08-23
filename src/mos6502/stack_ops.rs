@@ -24,9 +24,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     pub(super) fn plp(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        self.status_register = pop_from_stack!(self);
-        self.status_register &= !FLAG_BREAK;
-        self.status_register |= 1 << 5;
+        self.status_register = pop_from_stack!(self) | FLAG_BREAK | (1 << 5);
         self.increment_cycles(4);
         Ok(())
     }
