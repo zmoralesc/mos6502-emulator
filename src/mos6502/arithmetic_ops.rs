@@ -6,11 +6,11 @@ impl<T: Bus> MOS6502<T> {
     // add to accumulator with carry
     pub(super) fn adc(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode, bus)?;
+        let operand = self.resolve_operand(bus, address_mode)?;
         let value = match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
@@ -38,11 +38,11 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn sbc(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode, bus)?;
+        let operand = self.resolve_operand(bus, address_mode)?;
         let value = !match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,

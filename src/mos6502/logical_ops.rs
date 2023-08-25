@@ -3,10 +3,10 @@ use super::*;
 impl<T: Bus> MOS6502<T> {
     pub(super) fn and(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let operand = match self.resolve_operand(address_mode, bus)? {
+        let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
@@ -19,10 +19,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn eor(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let operand = match self.resolve_operand(address_mode, bus)? {
+        let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
@@ -35,10 +35,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn ora(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let operand = match self.resolve_operand(address_mode, bus)? {
+        let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),

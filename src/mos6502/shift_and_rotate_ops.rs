@@ -3,10 +3,10 @@ use super::*;
 impl<T: Bus> MOS6502<T> {
     pub(super) fn asl(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        match self.resolve_operand(address_mode, bus)? {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 self.flag_toggle(FLAG_CARRY, self.accumulator & NEGATIVE_BIT_MASK != 0);
                 self.accumulator = self.accumulator.wrapping_shl(1);
@@ -28,10 +28,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn lsr(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        match self.resolve_operand(address_mode, bus)? {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 != 0;
                 self.accumulator = self.accumulator.wrapping_shr(1);
@@ -54,11 +54,11 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn rol(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         let carry_bit_mask = self.flag_check(FLAG_CARRY) as u8;
-        match self.resolve_operand(address_mode, bus)? {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit7_is_set = self.accumulator & NEGATIVE_BIT_MASK != 0;
                 self.accumulator = self.accumulator.wrapping_shl(1) | carry_bit_mask;
@@ -82,11 +82,11 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn ror(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         let carry_bit_mask = (self.flag_check(FLAG_CARRY) as u8) << 7;
-        match self.resolve_operand(address_mode, bus)? {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 == 1;
                 self.accumulator = self.accumulator.wrapping_shr(1) | carry_bit_mask;

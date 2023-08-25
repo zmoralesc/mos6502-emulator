@@ -5,10 +5,10 @@ use super::*;
 impl<T: Bus> MOS6502<T> {
     pub(super) fn jmp(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let new_pc_value = match self.resolve_operand(address_mode, bus)? {
+        let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -19,8 +19,8 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn jsr(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         let return_address = self.program_counter + 1;
 
@@ -30,7 +30,7 @@ impl<T: Bus> MOS6502<T> {
         push_to_stack!(self, bus, return_address_hi);
         push_to_stack!(self, bus, return_address_lo);
 
-        let new_pc_value = match self.resolve_operand(address_mode, bus)? {
+        let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -39,7 +39,7 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn rts(&mut self, _: AddressingMode, bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn rts(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         let return_address_lo = pop_from_stack!(self, bus);
         let return_address_hi = pop_from_stack!(self, bus);
 

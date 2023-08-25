@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 macro_rules! compare_register {
     ($cpu:expr, $register:expr, $address_mode:ident, $bus:expr) => {
-        let operand: u8 = match $cpu.resolve_operand($address_mode, $bus)? {
+        let operand: u8 = match $cpu.resolve_operand($bus, $address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => $bus.read(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
@@ -34,24 +34,24 @@ macro_rules! compare_register {
 impl<T: Bus> MOS6502<T> {
     pub(super) fn cmp(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         compare_register!(self, self.accumulator, address_mode, bus);
     }
 
     pub(super) fn cpx(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         compare_register!(self, self.x_register, address_mode, bus);
     }
 
     pub(super) fn cpy(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
         compare_register!(self, self.y_register, address_mode, bus);
     }

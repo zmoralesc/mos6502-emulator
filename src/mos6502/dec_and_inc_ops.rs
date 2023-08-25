@@ -27,10 +27,10 @@ macro_rules! increment_register {
 impl<T: Bus> MOS6502<T> {
     pub(super) fn dec(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -44,20 +44,20 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn dex(&mut self, _: AddressingMode, _bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn dex(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         decrement_register!(self, self.x_register);
     }
 
-    pub(super) fn dey(&mut self, _: AddressingMode, _bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn dey(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         decrement_register!(self, self.y_register);
     }
 
     pub(super) fn inc(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -71,11 +71,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn inx(&mut self, _: AddressingMode, _bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn inx(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         increment_register!(self, self.x_register);
     }
 
-    pub(super) fn iny(&mut self, _: AddressingMode, _bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn iny(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         increment_register!(self, self.y_register);
     }
 }

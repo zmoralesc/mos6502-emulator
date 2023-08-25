@@ -57,7 +57,7 @@ enum InterruptKind {
     Irq,
 }
 
-type OpcodeFunction<T> = fn(&mut MOS6502<T>, AddressingMode, &mut T) -> Result<(), EmulationError>;
+type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<(), EmulationError>;
 struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode); 256]);
 
 enum OpcodeOperand {
@@ -447,8 +447,8 @@ impl<T: Bus> MOS6502<T> {
 
     fn not_implemented(
         &mut self,
-        _: AddressingMode,
         _: &mut impl Bus,
+        _: AddressingMode,
     ) -> Result<(), EmulationError> {
         Err(EmulationError::OpcodeNotImplemented)
     }
@@ -470,7 +470,7 @@ impl<T: Bus> MOS6502<T> {
         let opc = bus.read(self.program_counter)?;
         self.program_counter = self.program_counter.wrapping_add(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-        let result = opcode_func(self, address_mode, bus);
+        let result = opcode_func(self, bus, address_mode);
         self.handle_interrupts(bus)?;
         result
     }
@@ -482,7 +482,7 @@ impl<T: Bus> MOS6502<T> {
             opc = bus.read(self.program_counter)?;
             self.program_counter = self.program_counter.wrapping_add(1);
             let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-            opcode_func(self, address_mode, bus)?;
+            opcode_func(self, bus, address_mode)?;
             self.handle_interrupts(bus)?;
         }
         Ok(())
@@ -495,7 +495,7 @@ impl<T: Bus> MOS6502<T> {
             opc = bus.read(self.program_counter)?;
             let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
             self.program_counter = self.program_counter.wrapping_add(1);
-            opcode_func(self, address_mode, bus)?;
+            opcode_func(self, bus, address_mode)?;
             self.handle_interrupts(bus)?;
         }
     }
@@ -545,8 +545,8 @@ impl<T: Bus> MOS6502<T> {
     #[inline]
     fn resolve_operand(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<OpcodeOperand, EmulationError> {
         match address_mode {
             AddressingMode::Accumulator => {

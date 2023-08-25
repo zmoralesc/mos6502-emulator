@@ -3,10 +3,10 @@ use super::*;
 impl<T: Bus> MOS6502<T> {
     pub(super) fn bcc(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -19,10 +19,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bcs(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -35,10 +35,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn beq(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -51,10 +51,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bmi(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -67,10 +67,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bne(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -83,10 +83,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bpl(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -99,10 +99,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bvc(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -115,10 +115,10 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn bvs(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let addr = match self.resolve_operand(address_mode, bus)? {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };

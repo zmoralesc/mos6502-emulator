@@ -1,17 +1,17 @@
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn nop(&mut self, _: AddressingMode, _bus: &mut T) -> Result<(), EmulationError> {
+    pub(super) fn nop(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         self.increment_cycles(2);
         Ok(())
     }
 
     pub(super) fn bit(
         &mut self,
-        address_mode: AddressingMode,
         bus: &mut T,
+        address_mode: AddressingMode,
     ) -> Result<(), EmulationError> {
-        let operand = match self.resolve_operand(address_mode, bus)? {
+        let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
