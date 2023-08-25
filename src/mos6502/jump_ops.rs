@@ -1,10 +1,14 @@
-use crate::{push_to_stack, pop_from_stack};
+use crate::{pop_from_stack, push_to_stack};
 
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn jmp(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        let new_pc_value = match self.resolve_operand(address_mode)? {
+    pub(super) fn jmp(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
+        let new_pc_value = match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -13,16 +17,20 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn jsr(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn jsr(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
         let return_address = self.program_counter + 1;
 
         let return_address_lo: u8 = (return_address & 0xFF) as u8;
         let return_address_hi: u8 = ((return_address >> 8) & 0xFF) as u8;
 
-        push_to_stack!(self, return_address_hi);
-        push_to_stack!(self, return_address_lo);
+        push_to_stack!(self, bus, return_address_hi);
+        push_to_stack!(self, bus, return_address_lo);
 
-        let new_pc_value = match self.resolve_operand(address_mode)? {
+        let new_pc_value = match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -31,9 +39,9 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn rts(&mut self, _: AddressingMode) -> Result<(), EmulationError> {
-        let return_address_lo = pop_from_stack!(self);
-        let return_address_hi = pop_from_stack!(self);
+    pub(super) fn rts(&mut self, _: AddressingMode, bus: &mut T) -> Result<(), EmulationError> {
+        let return_address_lo = pop_from_stack!(self, bus);
+        let return_address_hi = pop_from_stack!(self, bus);
 
         let return_address = u16::from_le_bytes([return_address_lo, return_address_hi]);
         self.set_program_counter(return_address.wrapping_add(1));

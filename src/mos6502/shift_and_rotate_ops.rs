@@ -1,8 +1,12 @@
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn asl(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        match self.resolve_operand(address_mode)? {
+    pub(super) fn asl(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
+        match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Byte(_) => {
                 self.flag_toggle(FLAG_CARRY, self.accumulator & NEGATIVE_BIT_MASK != 0);
                 self.accumulator = self.accumulator.wrapping_shl(1);
@@ -10,20 +14,24 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
             }
             OpcodeOperand::Address(w) => {
-                let mut value = self.read_from_bus(w)?;
+                let mut value = bus.read(w)?;
                 self.flag_toggle(FLAG_CARRY, value & NEGATIVE_BIT_MASK != 0);
                 value = value.wrapping_shl(1);
                 self.flag_toggle(FLAG_NEGATIVE, value & NEGATIVE_BIT_MASK != 0);
                 self.flag_toggle(FLAG_ZERO, value == 0);
-                self.write_to_bus(w, value)?;
+                bus.write(w, value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         Ok(())
     }
 
-    pub(super) fn lsr(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
-        match self.resolve_operand(address_mode)? {
+    pub(super) fn lsr(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
+        match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 != 0;
                 self.accumulator = self.accumulator.wrapping_shr(1);
@@ -31,12 +39,12 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_CARRY, bit0_is_set);
             }
             OpcodeOperand::Address(w) => {
-                let mut value = self.read_from_bus(w)?;
+                let mut value = bus.read(w)?;
                 let bit0_is_set = value & 1 != 0;
                 value = value.wrapping_shr(1);
                 self.flag_toggle(FLAG_ZERO, value == 0);
                 self.flag_toggle(FLAG_CARRY, bit0_is_set);
-                self.write_to_bus(w, value)?;
+                bus.write(w, value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
@@ -44,9 +52,13 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn rol(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn rol(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
         let carry_bit_mask = self.flag_check(FLAG_CARRY) as u8;
-        match self.resolve_operand(address_mode)? {
+        match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Byte(_) => {
                 let bit7_is_set = self.accumulator & NEGATIVE_BIT_MASK != 0;
                 self.accumulator = self.accumulator.wrapping_shl(1) | carry_bit_mask;
@@ -55,22 +67,26 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
             }
             OpcodeOperand::Address(w) => {
-                let value = self.read_from_bus(w)?;
+                let value = bus.read(w)?;
                 let bit7_is_set = value & NEGATIVE_BIT_MASK != 0;
                 let new_value: u8 = value.wrapping_shl(1) | carry_bit_mask;
                 self.flag_toggle(FLAG_CARRY, bit7_is_set);
                 self.flag_toggle(FLAG_ZERO, new_value == 0);
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
-                self.write_to_bus(w, new_value)?;
+                bus.write(w, new_value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }
         Ok(())
     }
 
-    pub(super) fn ror(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn ror(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
         let carry_bit_mask = (self.flag_check(FLAG_CARRY) as u8) << 7;
-        match self.resolve_operand(address_mode)? {
+        match self.resolve_operand(address_mode, bus)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 == 1;
                 self.accumulator = self.accumulator.wrapping_shr(1) | carry_bit_mask;
@@ -79,13 +95,13 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
             }
             OpcodeOperand::Address(w) => {
-                let value = self.read_from_bus(w)?;
+                let value = bus.read(w)?;
                 let bit0_is_set = value & 1 == 1;
                 let new_value: u8 = value.wrapping_shr(1) | carry_bit_mask;
                 self.flag_toggle(FLAG_CARRY, bit0_is_set);
                 self.flag_toggle(FLAG_ZERO, new_value == 0);
                 self.flag_toggle(FLAG_NEGATIVE, new_value & NEGATIVE_BIT_MASK != 0);
-                self.write_to_bus(w, new_value)?;
+                bus.write(w, new_value)?;
             }
             _ => return Err(EmulationError::InvalidAddressingMode),
         }

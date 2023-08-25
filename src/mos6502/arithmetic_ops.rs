@@ -4,12 +4,16 @@ use super::*;
 
 impl<T: Bus> MOS6502<T> {
     // add to accumulator with carry
-    pub(super) fn adc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn adc(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode)?;
+        let operand = self.resolve_operand(address_mode, bus)?;
         let value = match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
+            OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.increment_cycles(1);
@@ -32,12 +36,16 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn sbc(&mut self, address_mode: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn sbc(
+        &mut self,
+        address_mode: AddressingMode,
+        bus: &mut T,
+    ) -> Result<(), EmulationError> {
         let old_value = self.accumulator;
-        let operand = self.resolve_operand(address_mode)?;
+        let operand = self.resolve_operand(address_mode, bus)?;
         let value = !match operand {
             OpcodeOperand::Byte(b) => b,
-            OpcodeOperand::Address(addr) => self.read_from_bus(addr)?,
+            OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
         self.increment_cycles(1);
