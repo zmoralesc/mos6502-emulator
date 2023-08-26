@@ -31,6 +31,7 @@ macro_rules! pop_from_stack {
     }};
 }
 
+#[typetag::serde(tag = "type")]
 pub trait Bus {
     /// Read byte from bus
     fn read(&self, address: u16) -> Result<u8, BusError>;
@@ -91,7 +92,7 @@ pub struct MOS6502<T: Bus> {
     stack_pointer: u8,
     status_register: u8,
     program_counter: u16,
-    cycles: u128,
+    cycles: u64,
     #[serde(skip_serializing, skip_deserializing)]
     opcode_array: OpcodeFunctionArray<T>,
     irq: bool,
@@ -371,7 +372,7 @@ impl<T: Bus> MOS6502<T> {
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
             status_register: (1 << 5) | FLAG_BREAK,
-            cycles: u128::MIN,
+            cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
             nmi: false,
             irq: false,
@@ -398,7 +399,7 @@ impl<T: Bus> MOS6502<T> {
         self.stack_pointer
     }
 
-    pub fn get_cycles(&self) -> u128 {
+    pub fn get_cycles(&self) -> u64 {
         self.cycles
     }
 
@@ -461,7 +462,7 @@ impl<T: Bus> MOS6502<T> {
 
     /// Return number of elapsed CPU cycles
     #[inline]
-    pub fn cycles(&self) -> u128 {
+    pub fn cycles(&self) -> u64 {
         self.cycles
     }
 
@@ -476,7 +477,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Run CPU for a specific number of cycles
-    pub fn run_for_cycles(&mut self, bus: &mut T, cycles: u128) -> Result<(), EmulationError> {
+    pub fn run_for_cycles(&mut self, bus: &mut T, cycles: u64) -> Result<(), EmulationError> {
         let mut opc: u8;
         while self.cycles < cycles {
             opc = bus.read(self.program_counter)?;
@@ -527,7 +528,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     #[inline]
-    fn increment_cycles(&mut self, n: u128) {
+    fn increment_cycles(&mut self, n: u64) {
         self.cycles = self.cycles.wrapping_add(n);
     }
 
@@ -574,7 +575,7 @@ impl<T: Bus> MOS6502<T> {
                 let address_with_offset = address.wrapping_add(self.x_register as u16);
 
                 // add one more cycle if page boundaries were crossed
-                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u128);
+                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u64);
 
                 self.increment_cycles(3);
                 Ok(OpcodeOperand::Address(address_with_offset))
@@ -589,7 +590,7 @@ impl<T: Bus> MOS6502<T> {
                 let address_with_offset = address.wrapping_add(self.y_register as u16);
 
                 // add one more cycle if page boundaries were crossed
-                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u128);
+                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u64);
 
                 self.increment_cycles(3);
                 Ok(OpcodeOperand::Address(address_with_offset))
