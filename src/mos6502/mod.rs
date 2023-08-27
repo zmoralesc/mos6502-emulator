@@ -538,32 +538,34 @@ impl<T: Bus> MOS6502<T> {
             AddressingMode::AbsoluteXIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
-                let high_byte: u8 = bus.read(self.program_counter)?;
+                let mut high_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let address = u16::from_le_bytes([low_byte, high_byte]);
-                let address_with_offset = address.wrapping_add(self.x_register as u16);
-
-                // add one more cycle if page boundaries were crossed
-                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u64);
+                let (low_byte, overflow) = low_byte.overflowing_add(self.x_register);
+                if overflow {
+                    high_byte = high_byte.wrapping_add(1);
+                    self.increment_cycles(1);
+                }
 
                 self.increment_cycles(3);
-                Ok(OpcodeOperand::Address(address_with_offset))
+                let address = u16::from_le_bytes([low_byte, high_byte]);
+                Ok(OpcodeOperand::Address(address))
             }
             AddressingMode::AbsoluteYIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
-                let high_byte: u8 = bus.read(self.program_counter)?;
+                let mut high_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let address = u16::from_le_bytes([low_byte, high_byte]);
-                let address_with_offset = address.wrapping_add(self.y_register as u16);
-
-                // add one more cycle if page boundaries were crossed
-                self.increment_cycles((address & 0xFF00 != address_with_offset & 0xFF00) as u64);
+                let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
+                if overflow {
+                    high_byte = high_byte.wrapping_add(1);
+                    self.increment_cycles(1);
+                }
 
                 self.increment_cycles(3);
-                Ok(OpcodeOperand::Address(address_with_offset))
+                let address = u16::from_le_bytes([low_byte, high_byte]);
+                Ok(OpcodeOperand::Address(address))
             }
             AddressingMode::Immediate => {
                 let byte: u8 = bus.read(self.program_counter)?;
