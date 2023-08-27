@@ -1,7 +1,7 @@
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn nop(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn nop(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         self.increment_cycles(2);
         Ok(())
     }

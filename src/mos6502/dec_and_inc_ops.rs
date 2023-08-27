@@ -44,11 +44,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn dex(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         decrement_register!(self, self.x_register);
     }
 
-    pub(super) fn dey(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         decrement_register!(self, self.y_register);
     }
 
@@ -71,11 +71,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn inx(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         increment_register!(self, self.x_register);
     }
 
-    pub(super) fn iny(&mut self, _bus: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
         increment_register!(self, self.y_register);
     }
 }
