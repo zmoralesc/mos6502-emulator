@@ -514,6 +514,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
+    #[inline]
     fn resolve_operand(
         &mut self,
         bus: &mut T,
