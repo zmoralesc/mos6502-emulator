@@ -476,19 +476,6 @@ impl<T: Bus> MOS6502<T> {
         result
     }
 
-    /// Run CPU for a specific number of cycles
-    pub fn run_for_cycles(&mut self, bus: &mut T, cycles: u64) -> Result<(), EmulationError> {
-        let mut opc: u8;
-        while self.cycles < cycles {
-            opc = bus.read(self.program_counter)?;
-            self.program_counter = self.program_counter.wrapping_add(1);
-            let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-            opcode_func(self, bus, address_mode)?;
-            self.handle_interrupts(bus)?;
-        }
-        Ok(())
-    }
-
     /// Start CPU
     pub fn run(&mut self, bus: &mut T) -> Result<(), EmulationError> {
         let mut opc: u8;
