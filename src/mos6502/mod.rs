@@ -379,31 +379,43 @@ impl<T: Bus> MOS6502<T> {
         })
     }
 
-    pub fn get_program_counter(&self) -> u16 {
+    #[inline]
+    pub fn program_counter(&self) -> u16 {
         self.program_counter
     }
 
-    pub fn get_accumulator(&self) -> u8 {
+    #[inline]
+    pub fn accumulator(&self) -> u8 {
         self.accumulator
     }
 
-    pub fn get_x_register(&self) -> u8 {
+    #[inline]
+    pub fn x_register(&self) -> u8 {
         self.x_register
     }
 
-    pub fn get_y_register(&self) -> u8 {
+    #[inline]
+    pub fn y_register(&self) -> u8 {
         self.y_register
     }
 
-    pub fn get_stack_pointer(&self) -> u8 {
+    #[inline]
+    pub fn stack_pointer(&self) -> u8 {
         self.stack_pointer
     }
 
-    pub fn get_cycles(&self) -> u64 {
+    /// Change value of program counter
+    #[inline]
+    pub fn set_program_counter(&mut self, value: u16) {
+        self.program_counter = value;
+    }
+
+    /// Return number of elapsed CPU cycles
+    #[inline]
+    pub fn cycles(&self) -> u64 {
         self.cycles
     }
 
-    #[inline]
     fn perform_interrupt(
         &mut self,
         return_address: u16,
@@ -454,18 +466,6 @@ impl<T: Bus> MOS6502<T> {
         Err(EmulationError::OpcodeNotImplemented)
     }
 
-    /// Change value of program counter
-    #[inline]
-    pub fn set_program_counter(&mut self, value: u16) {
-        self.program_counter = value;
-    }
-
-    /// Return number of elapsed CPU cycles
-    #[inline]
-    pub fn cycles(&self) -> u64 {
-        self.cycles
-    }
-
     /// Step over one CPU instruction
     pub fn step(&mut self, bus: &mut T) -> Result<(), EmulationError> {
         let opc = bus.read(self.program_counter)?;
@@ -507,19 +507,14 @@ impl<T: Bus> MOS6502<T> {
         self.status_register & flag != 0
     }
 
+    /// Turn specified flag on/off
     #[inline]
-    pub fn accumulator(&self) -> u8 {
-        self.accumulator
-    }
-
-    #[inline]
-    pub fn x_register(&self) -> u8 {
-        self.x_register
-    }
-
-    #[inline]
-    pub fn y_register(&self) -> u8 {
-        self.y_register
+    fn flag_toggle(&mut self, f: u8, value: bool) {
+        if value {
+            self.status_register |= f; // set flag
+        } else {
+            self.status_register &= !f; // clear flag
+        }
     }
 
     #[inline]
@@ -532,18 +527,7 @@ impl<T: Bus> MOS6502<T> {
         self.cycles = self.cycles.wrapping_add(n);
     }
 
-    /// Turn specified flag on/off
-    #[inline]
-    fn flag_toggle(&mut self, f: u8, value: bool) {
-        if value {
-            self.status_register |= f; // set flag
-        } else {
-            self.status_register &= !f; // clear flag
-        }
-    }
-
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
-    #[inline]
     fn resolve_operand(
         &mut self,
         bus: &mut T,
