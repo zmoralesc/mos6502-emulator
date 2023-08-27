@@ -24,8 +24,7 @@ impl<T: Bus> MOS6502<T> {
     ) -> Result<(), EmulationError> {
         let return_address = self.program_counter + 1;
 
-        let return_address_lo: u8 = (return_address & 0xFF) as u8;
-        let return_address_hi: u8 = ((return_address >> 8) & 0xFF) as u8;
+        let (return_address_lo, return_address_hi): (u8, u8) = return_address.to_le_bytes().into();
 
         push_to_stack!(self, bus, return_address_hi);
         push_to_stack!(self, bus, return_address_lo);
