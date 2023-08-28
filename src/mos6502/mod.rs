@@ -611,12 +611,18 @@ impl<T: Bus> MOS6502<T> {
                 self.increment_program_counter(1);
 
                 let low_byte = bus.read(zp_addr as u16)?;
-                let high_byte = bus.read(zp_addr.wrapping_add(1) as u16)?;
+                let mut high_byte = bus.read(zp_addr.wrapping_add(1) as u16)?;
 
-                self.increment_cycles(6);
-                Ok(OpcodeOperand::Address(
-                    u16::from_le_bytes([low_byte, high_byte]).wrapping_add(self.y_register as u16),
-                ))
+                let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
+                if overflow {
+                    high_byte = high_byte.wrapping_add(1);
+                    self.increment_cycles(1);
+                }
+
+                self.increment_cycles(5);
+                Ok(OpcodeOperand::Address(u16::from_le_bytes([
+                    low_byte, high_byte,
+                ])))
             }
             AddressingMode::Relative => {
                 let offset = bus.read(self.program_counter)?;
