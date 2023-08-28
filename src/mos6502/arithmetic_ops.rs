@@ -3,7 +3,10 @@ use crate::error::EmulationError;
 use super::*;
 
 #[inline(always)]
-fn do_adc<T: Bus>(cpu: &mut MOS6502<T>, value: u8) -> Result<(), EmulationError> {
+fn add_to_accumulator_with_carry<T: Bus>(
+    cpu: &mut MOS6502<T>,
+    value: u8,
+) -> Result<(), EmulationError> {
     let old_value = cpu.accumulator;
     cpu.increment_cycles(1);
 
@@ -38,7 +41,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        do_adc(self, value)
+        add_to_accumulator_with_carry(self, value)
     }
 
     // subtract from accumulator with carry
@@ -52,6 +55,6 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(EmulationError::InvalidAddressingMode),
         };
-        do_adc(self, !value)
+        add_to_accumulator_with_carry(self, !value)
     }
 }
