@@ -18,7 +18,7 @@ impl<T: Bus> MOS6502<T> {
         };
         self.increment_cycles(1);
 
-        let sign_bits_match: bool = ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) == 0;
+        let sign_bits_match: bool = (!(self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
         self.accumulator = self
             .accumulator
@@ -50,7 +50,7 @@ impl<T: Bus> MOS6502<T> {
         };
         self.increment_cycles(1);
 
-        let sign_bits_match: bool = ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) == 0;
+        let sign_bits_match: bool = (!(self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
         self.accumulator = self
             .accumulator
