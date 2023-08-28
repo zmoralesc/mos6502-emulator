@@ -41,6 +41,7 @@ impl<T: Bus> MOS6502<T> {
         do_adc(self, value)
     }
 
+    // subtract from accumulator with carry
     pub(super) fn sbc(
         &mut self,
         bus: &mut T,
