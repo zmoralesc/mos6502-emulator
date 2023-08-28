@@ -19,7 +19,7 @@ fn add_to_accumulator_with_carry<T: Bus>(
 
     let overflow: bool = sign_bits_match && ((cpu.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
-    let carry = cpu.accumulator < old_value;
+    let carry = cpu.accumulator < old_value || (cpu.accumulator == old_value && value != 0);
 
     cpu.flag_toggle(FLAG_NEGATIVE, cpu.accumulator & NEGATIVE_BIT_MASK != 0);
     cpu.flag_toggle(FLAG_ZERO, cpu.accumulator == 0);
