@@ -29,10 +29,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         let value = bus.read(addr)?.wrapping_sub(1);
         bus.write(addr, value)?;
@@ -44,11 +44,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         decrement_register!(self, self.x_register);
     }
 
-    pub(super) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         decrement_register!(self, self.y_register);
     }
 
@@ -56,10 +56,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         let value = bus.read(addr)?.wrapping_add(1);
         bus.write(addr, value)?;
@@ -71,11 +71,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         increment_register!(self, self.x_register);
     }
 
-    pub(super) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         increment_register!(self, self.y_register);
     }
 }

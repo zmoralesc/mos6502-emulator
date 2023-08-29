@@ -8,11 +8,11 @@ impl<T: Bus> MOS6502<T> {
         register: u8,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let operand: u8 = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
 
         self.increment_cycles(1);
@@ -40,7 +40,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         self.compare_register(self.accumulator, bus, address_mode)
     }
 
@@ -48,7 +48,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         self.compare_register(self.x_register, bus, address_mode)
     }
 
@@ -56,7 +56,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         self.compare_register(self.y_register, bus, address_mode)
     }
 }

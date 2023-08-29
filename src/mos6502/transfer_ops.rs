@@ -5,7 +5,7 @@ macro_rules! store_register_value {
         let operand = $cpu.resolve_operand($bus, $address_mode)?;
         let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         $cpu.increment_cycles(1);
         $bus.write(addr, $register)?;
@@ -20,7 +20,7 @@ macro_rules! load_value_to_register {
         $register = match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => $bus.read(addr)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
 
         $cpu.flag_toggle(FLAG_ZERO, $register == 0);
@@ -46,7 +46,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         load_value_to_register!(self, self.accumulator, address_mode, bus);
     }
 
@@ -55,7 +55,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         load_value_to_register!(self, self.x_register, address_mode, bus);
     }
 
@@ -64,7 +64,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         load_value_to_register!(self, self.y_register, address_mode, bus);
     }
 
@@ -73,7 +73,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         store_register_value!(self, self.accumulator, address_mode, bus);
     }
 
@@ -82,7 +82,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         store_register_value!(self, self.x_register, address_mode, bus);
     }
 
@@ -91,32 +91,32 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         store_register_value!(self, self.y_register, address_mode, bus);
     }
 
     // transfer accumulator to X register
-    pub(super) fn tax(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn tax(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         transfer_register!(self, self.accumulator, self.x_register);
     }
 
     // transfer accumulator to Y register
-    pub(super) fn tay(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn tay(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         transfer_register!(self, self.accumulator, self.y_register);
     }
 
     // transfer stack pointer to X register
-    pub(super) fn tsx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn tsx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         transfer_register!(self, self.stack_pointer, self.x_register);
     }
 
     // transfer X register to accumulator
-    pub(super) fn txa(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn txa(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         transfer_register!(self, self.x_register, self.accumulator);
     }
 
     // transfer X register to stack pointer
-    pub(super) fn txs(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn txs(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.increment_cycles(2);
         self.stack_pointer = self.x_register;
 
@@ -124,7 +124,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     // transfer Y register to accumulator
-    pub(super) fn tya(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn tya(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         transfer_register!(self, self.y_register, self.accumulator);
     }
 }

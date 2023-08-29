@@ -5,10 +5,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if !self.flag_check(FLAG_CARRY) {
             self.set_program_counter(addr);
@@ -21,10 +21,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if self.flag_check(FLAG_CARRY) {
             self.set_program_counter(addr);
@@ -37,10 +37,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if self.flag_check(FLAG_ZERO) {
             self.set_program_counter(addr);
@@ -53,10 +53,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if self.flag_check(FLAG_NEGATIVE) {
             self.set_program_counter(addr);
@@ -69,10 +69,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if !self.flag_check(FLAG_ZERO) {
             self.set_program_counter(addr);
@@ -85,10 +85,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if !self.flag_check(FLAG_NEGATIVE) {
             self.set_program_counter(addr);
@@ -101,10 +101,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if !self.flag_check(FLAG_OVERFLOW) {
             self.set_program_counter(addr);
@@ -117,10 +117,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         if self.flag_check(FLAG_OVERFLOW) {
             self.set_program_counter(addr);

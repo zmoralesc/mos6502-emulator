@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum EmulationError {
+pub enum CpuError {
     #[error("invalid addressing mode")]
     InvalidAddressingMode,
     #[error("opcode not implemented")]

@@ -37,7 +37,7 @@ enum InterruptKind {
     Irq,
 }
 
-type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<(), EmulationError>;
+type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<(), CpuError>;
 struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode); 256]);
 
 enum OpcodeOperand {
@@ -343,7 +343,7 @@ impl<T: Bus> Default for OpcodeFunctionArray<T> {
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new() -> Result<Self, EmulationError> {
+    pub fn new() -> Result<Self, CpuError> {
         Ok(Self {
             accumulator: u8::MIN,
             x_register: u8::MIN,
@@ -413,7 +413,7 @@ impl<T: Bus> MOS6502<T> {
         return_address: u16,
         kind: InterruptKind,
         bus: &mut T,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let (return_address_lo, return_address_hi): (u8, u8) = return_address.to_le_bytes().into();
 
         self.push_to_stack(bus, return_address_hi)?;
@@ -435,7 +435,7 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub fn handle_interrupts(&mut self, bus: &mut T) -> Result<(), EmulationError> {
+    pub fn handle_interrupts(&mut self, bus: &mut T) -> Result<(), CpuError> {
         if self.nmi {
             self.nmi = false;
             self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)?;
@@ -453,12 +453,12 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         _: &mut impl Bus,
         _: AddressingMode,
-    ) -> Result<(), EmulationError> {
-        Err(EmulationError::OpcodeNotImplemented)
+    ) -> Result<(), CpuError> {
+        Err(CpuError::OpcodeNotImplemented)
     }
 
     /// Step over one CPU instruction
-    pub fn step(&mut self, bus: &mut T) -> Result<(), EmulationError> {
+    pub fn step(&mut self, bus: &mut T) -> Result<(), CpuError> {
         let opc = bus.read(self.program_counter)?;
         self.increment_program_counter(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
@@ -499,7 +499,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<OpcodeOperand, EmulationError> {
+    ) -> Result<OpcodeOperand, CpuError> {
         match address_mode {
             AddressingMode::Accumulator => {
                 self.increment_cycles(1);

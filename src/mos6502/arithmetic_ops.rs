@@ -1,10 +1,10 @@
-use crate::error::EmulationError;
+use crate::error::CpuError;
 
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
     #[inline(always)]
-    fn add_to_accumulator_with_carry(&mut self, value: u8) -> Result<(), EmulationError> {
+    fn add_to_accumulator_with_carry(&mut self, value: u8) -> Result<(), CpuError> {
         let old_value = self.accumulator;
         self.increment_cycles(1);
 
@@ -33,11 +33,11 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         self.add_to_accumulator_with_carry(value)
     }
@@ -47,11 +47,11 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
         self.add_to_accumulator_with_carry(!value)
     }

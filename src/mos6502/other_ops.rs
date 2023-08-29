@@ -1,7 +1,7 @@
 use super::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn nop(&mut self, _: &mut T, _: AddressingMode) -> Result<(), EmulationError> {
+    pub(super) fn nop(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.increment_cycles(2);
         Ok(())
     }
@@ -10,10 +10,10 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), EmulationError> {
+    ) -> Result<(), CpuError> {
         let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(EmulationError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode),
         };
 
         self.flag_toggle(FLAG_NEGATIVE, operand & (1 << 7) != 0);
