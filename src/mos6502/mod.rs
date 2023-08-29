@@ -465,23 +465,11 @@ impl<T: Bus> MOS6502<T> {
     /// Step over one CPU instruction
     pub fn step(&mut self, bus: &mut T) -> Result<(), EmulationError> {
         let opc = bus.read(self.program_counter)?;
-        self.program_counter = self.program_counter.wrapping_add(1);
+        self.increment_program_counter(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
         let result = opcode_func(self, bus, address_mode);
         self.handle_interrupts(bus)?;
         result
-    }
-
-    /// Start CPU
-    pub fn run(&mut self, bus: &mut T) -> Result<(), EmulationError> {
-        let mut opc: u8;
-        loop {
-            opc = bus.read(self.program_counter)?;
-            let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-            self.program_counter = self.program_counter.wrapping_add(1);
-            opcode_func(self, bus, address_mode)?;
-            self.handle_interrupts(bus)?;
-        }
     }
 
     /// Check if specified flag is set
