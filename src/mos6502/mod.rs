@@ -613,8 +613,8 @@ impl<T: Bus> MOS6502<T> {
                 let offset = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let offset = offset as i8;
-                let new_pc = (self.program_counter as i16 + offset as i16) as u16;
+                let offset = (offset as i8) as i16;
+                let new_pc = self.program_counter.wrapping_add_signed(offset);
 
                 Ok(OpcodeOperand::Address(new_pc))
             }
