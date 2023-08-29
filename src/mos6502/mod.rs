@@ -15,22 +15,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 
-#[macro_export]
-macro_rules! push_to_stack {
-    ($cpu:expr, $bus:expr, $value:expr) => {
-        $bus.write(STACK_BASE + $cpu.stack_pointer as u16, $value)?;
-        $cpu.stack_pointer = $cpu.stack_pointer.wrapping_sub(1);
-    };
-}
-
-#[macro_export]
-macro_rules! pop_from_stack {
-    ($cpu:expr, $bus:expr) => {{
-        $cpu.stack_pointer = $cpu.stack_pointer.wrapping_add(1);
-        $bus.read(STACK_BASE + $cpu.stack_pointer as u16)?
-    }};
-}
-
 #[typetag::serde(tag = "type")]
 pub trait Bus {
     /// Read byte from bus
@@ -416,6 +400,19 @@ impl<T: Bus> MOS6502<T> {
         self.cycles
     }
 
+    #[inline]
+    fn pop_from_stack(&mut self, bus: &T) -> Result<u8, BusError> {
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
+        bus.read(STACK_BASE + self.stack_pointer as u16)
+    }
+
+    #[inline]
+    fn push_to_stack(&mut self, bus: &mut T, value: u8) -> Result<(), BusError> {
+        let result = bus.write(STACK_BASE + self.stack_pointer as u16, value);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+        result
+    }
+
     fn perform_interrupt(
         &mut self,
         return_address: u16,
@@ -424,15 +421,15 @@ impl<T: Bus> MOS6502<T> {
     ) -> Result<(), EmulationError> {
         let (return_address_lo, return_address_hi): (u8, u8) = return_address.to_le_bytes().into();
 
-        push_to_stack!(self, bus, return_address_hi);
-        push_to_stack!(self, bus, return_address_lo);
+        self.push_to_stack(bus, return_address_hi)?;
+        self.push_to_stack(bus, return_address_lo)?;
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
             InterruptKind::Irq => (0xFFFE, self.status_register | FLAG_BREAK),
             InterruptKind::Nmi => (0xFFFA, self.status_register & !FLAG_BREAK),
         };
 
-        push_to_stack!(self, bus, status_register_value);
+        self.push_to_stack(bus, status_register_value)?;
 
         let divert_address_lo = bus.read(vector_address)?;
         let divert_address_hi = bus.read(vector_address + 1)?;
