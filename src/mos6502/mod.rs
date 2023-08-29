@@ -15,14 +15,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 
-#[typetag::serde(tag = "type")]
 pub trait Bus {
-    /// Read byte from bus
     fn read(&self, address: u16) -> Result<u8, BusError>;
-    /// Write byte to bus
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
-    /// Get bus size in bytes
-    fn size(&self) -> usize;
 }
 
 pub const FLAG_NEGATIVE: u8 = 1 << 7;
