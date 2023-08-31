@@ -36,6 +36,7 @@ const NEGATIVE_BIT_MASK: u8 = 0b10000000;
 enum InterruptKind {
     Nmi,
     Irq,
+    Brk,
 }
 
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<(), CpuError>;
@@ -75,8 +76,6 @@ pub struct MOS6502<T: Bus> {
     cycles: u64,
     #[serde(skip_serializing, skip_deserializing)]
     opcode_array: OpcodeFunctionArray<T>,
-    pub irq: bool,
-    pub nmi: bool,
 }
 
 impl<T: Bus> Default for OpcodeFunctionArray<T> {
@@ -354,8 +353,6 @@ impl<T: Bus> MOS6502<T> {
             status_register: (1 << 5) | FLAG_BREAK,
             cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
-            nmi: false,
-            irq: false,
         })
     }
 
@@ -421,8 +418,9 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_lo)?;
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, self.status_register | FLAG_BREAK),
-            InterruptKind::Nmi => (0xFFFA, self.status_register & !FLAG_BREAK),
+            InterruptKind::Irq => (0xFFFE, (self.status_register & !FLAG_BREAK) | 1 << 5),
+            InterruptKind::Nmi => (0xFFFA, (self.status_register & !FLAG_BREAK) | 1 << 5),
+            InterruptKind::Brk => (0xFFFE, (self.status_register | FLAG_BREAK) | 1 << 5),
         };
 
         self.push_to_stack(bus, status_register_value)?;
@@ -437,15 +435,15 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    #[inline]
-    fn handle_interrupts(&mut self, bus: &mut T) -> Result<(), CpuError> {
-        if self.nmi {
-            self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)?;
+    pub fn do_irq(&mut self, bus: &mut T) -> Result<(), CpuError> {
+        if self.flag_check(FLAG_NO_INTERRUPTS) {
+            return Ok(());
         }
-        if self.irq && !self.flag_check(FLAG_NO_INTERRUPTS) {
-            self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)?;
-        }
-        Ok(())
+        self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)
+    }
+
+    pub fn do_nmi(&mut self, bus: &mut T) -> Result<(), CpuError> {
+        self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)
     }
 
     fn not_implemented(&mut self, _: &mut impl Bus, _: AddressingMode) -> Result<(), CpuError> {
@@ -454,14 +452,10 @@ impl<T: Bus> MOS6502<T> {
 
     /// Step over one CPU instruction
     pub fn step(&mut self, bus: &mut T) -> Result<(), CpuError> {
-        self.handle_interrupts(bus)?;
-
         let opc = bus.read(self.program_counter)?;
         self.increment_program_counter(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-        opcode_func(self, bus, address_mode)?;
-
-        self.handle_interrupts(bus)
+        opcode_func(self, bus, address_mode)
     }
 
     /// Check if specified flag is set
