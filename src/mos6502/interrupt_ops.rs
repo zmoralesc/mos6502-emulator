@@ -2,9 +2,7 @@ use super::*;
 
 impl<T: Bus> MOS6502<T> {
     pub(super) fn brk(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {
-        let res = self.perform_interrupt(self.program_counter + 1, InterruptKind::Irq, bus);
-        self.flag_toggle(FLAG_NO_INTERRUPTS, true);
-        res
+        self.perform_interrupt(self.program_counter + 1, InterruptKind::Irq, bus)
     }
 
     pub(super) fn rti(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {

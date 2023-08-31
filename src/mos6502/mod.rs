@@ -75,8 +75,8 @@ pub struct MOS6502<T: Bus> {
     cycles: u64,
     #[serde(skip_serializing, skip_deserializing)]
     opcode_array: OpcodeFunctionArray<T>,
-    irq: bool,
-    nmi: bool,
+    pub irq: bool,
+    pub nmi: bool,
 }
 
 impl<T: Bus> Default for OpcodeFunctionArray<T> {
@@ -431,41 +431,37 @@ impl<T: Bus> MOS6502<T> {
         let divert_address_hi = bus.read(vector_address + 1)?;
 
         self.set_program_counter(u16::from_le_bytes([divert_address_lo, divert_address_hi]));
+        self.flag_toggle(FLAG_NO_INTERRUPTS, true);
 
         self.increment_cycles(7);
         Ok(())
     }
 
-    pub fn handle_interrupts(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    #[inline]
+    fn handle_interrupts(&mut self, bus: &mut T) -> Result<(), CpuError> {
         if self.nmi {
-            self.nmi = false;
             self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)?;
         }
-        if self.irq {
-            self.irq = false;
-            if !self.flag_check(FLAG_NO_INTERRUPTS) {
-                self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)?;
-            }
+        if self.irq && !self.flag_check(FLAG_NO_INTERRUPTS) {
+            self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)?;
         }
         Ok(())
     }
 
-    fn not_implemented(
-        &mut self,
-        _: &mut impl Bus,
-        _: AddressingMode,
-    ) -> Result<(), CpuError> {
+    fn not_implemented(&mut self, _: &mut impl Bus, _: AddressingMode) -> Result<(), CpuError> {
         Err(CpuError::OpcodeNotImplemented)
     }
 
     /// Step over one CPU instruction
     pub fn step(&mut self, bus: &mut T) -> Result<(), CpuError> {
+        self.handle_interrupts(bus)?;
+
         let opc = bus.read(self.program_counter)?;
         self.increment_program_counter(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
-        let result = opcode_func(self, bus, address_mode);
-        self.handle_interrupts(bus)?;
-        result
+        opcode_func(self, bus, address_mode)?;
+
+        self.handle_interrupts(bus)
     }
 
     /// Check if specified flag is set
