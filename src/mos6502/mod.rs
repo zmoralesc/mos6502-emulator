@@ -418,12 +418,12 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_lo)?;
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, (self.status_register & !FLAG_BREAK) | 1 << 5),
-            InterruptKind::Nmi => (0xFFFA, (self.status_register & !FLAG_BREAK) | 1 << 5),
-            InterruptKind::Brk => (0xFFFE, (self.status_register | FLAG_BREAK) | 1 << 5),
+            InterruptKind::Irq => (0xFFFE, self.status_register & !FLAG_BREAK),
+            InterruptKind::Nmi => (0xFFFA, self.status_register & !FLAG_BREAK),
+            InterruptKind::Brk => (0xFFFE, self.status_register | FLAG_BREAK),
         };
 
-        self.push_to_stack(bus, status_register_value)?;
+        self.push_to_stack(bus, status_register_value | 1 << 5)?;
 
         let divert_address_lo = bus.read(vector_address)?;
         let divert_address_hi = bus.read(vector_address + 1)?;
@@ -435,14 +435,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub fn do_irq(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    pub fn irq(&mut self, bus: &mut T) -> Result<(), CpuError> {
         if self.flag_check(FLAG_NO_INTERRUPTS) {
             return Ok(());
         }
         self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)
     }
 
-    pub fn do_nmi(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    pub fn nmi(&mut self, bus: &mut T) -> Result<(), CpuError> {
         self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)
     }
 
