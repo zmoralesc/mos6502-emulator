@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 
-#[typetag::serde(tag = "type")]
 pub trait Bus {
     fn read(&self, address: u16) -> Result<u8, BusError>;
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
