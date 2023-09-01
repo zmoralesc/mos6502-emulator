@@ -26,6 +26,7 @@ bitflags! {
     pub struct CpuFlags: u8 {
         const Negative = 1 << 7;
         const Overflow = 1 << 6;
+        const Unused = 1 << 5;
         const Break = 1 << 4;
         const Decimal = 1 << 3;
         const NoInterrupts = 1 << 2;
@@ -361,7 +362,7 @@ impl<T: Bus> MOS6502<T> {
             y_register: u8::MIN,
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
-            status_register: (1 << 5) | CpuFlags::Break.as_u8(),
+            status_register: (CpuFlags::Unused | CpuFlags::Break).as_u8(),
             cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
         })
@@ -434,7 +435,7 @@ impl<T: Bus> MOS6502<T> {
             InterruptKind::Brk => (0xFFFE, self.status_register | CpuFlags::Break.as_u8()),
         };
 
-        self.push_to_stack(bus, status_register_value | 1 << 5)?;
+        self.push_to_stack(bus, status_register_value | CpuFlags::Unused.as_u8())?;
 
         let divert_address_lo = bus.read(vector_address)?;
         let divert_address_hi = bus.read(vector_address + 1)?;
