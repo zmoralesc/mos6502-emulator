@@ -11,6 +11,7 @@ mod shift_and_rotate_ops;
 mod stack_ops;
 mod transfer_ops;
 
+use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
 use crate::error::*;
@@ -21,13 +22,23 @@ pub trait Bus {
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
 }
 
-pub const FLAG_NEGATIVE: u8 = 1 << 7;
-pub const FLAG_OVERFLOW: u8 = 1 << 6;
-pub const FLAG_BREAK: u8 = 1 << 4;
-pub const FLAG_DECIMAL: u8 = 1 << 3;
-pub const FLAG_NO_INTERRUPTS: u8 = 1 << 2;
-pub const FLAG_ZERO: u8 = 1 << 1;
-pub const FLAG_CARRY: u8 = 1 << 0;
+bitflags! {
+    pub struct CpuFlags: u8 {
+        const Negative = 1 << 7;
+        const Overflow = 1 << 6;
+        const Break = 1 << 4;
+        const Decimal = 1 << 3;
+        const NoInterrupts = 1 << 2;
+        const Zero = 1 << 1;
+        const Carry = 1 << 0;
+    }
+}
+
+impl CpuFlags {
+    pub const fn as_u8(&self) -> u8 {
+        self.bits() as u8
+    }
+}
 
 const STACK_BASE: u16 = 0x0100;
 
@@ -350,7 +361,7 @@ impl<T: Bus> MOS6502<T> {
             y_register: u8::MIN,
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
-            status_register: (1 << 5) | FLAG_BREAK,
+            status_register: (1 << 5) | CpuFlags::Break.as_u8(),
             cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
         })
@@ -418,9 +429,9 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_lo)?;
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, self.status_register & !FLAG_BREAK),
-            InterruptKind::Nmi => (0xFFFA, self.status_register & !FLAG_BREAK),
-            InterruptKind::Brk => (0xFFFE, self.status_register | FLAG_BREAK),
+            InterruptKind::Irq => (0xFFFE, self.status_register & !CpuFlags::Break.as_u8()),
+            InterruptKind::Nmi => (0xFFFA, self.status_register & !CpuFlags::Break.as_u8()),
+            InterruptKind::Brk => (0xFFFE, self.status_register | CpuFlags::Break.as_u8()),
         };
 
         self.push_to_stack(bus, status_register_value | 1 << 5)?;
@@ -429,14 +440,14 @@ impl<T: Bus> MOS6502<T> {
         let divert_address_hi = bus.read(vector_address + 1)?;
 
         self.set_program_counter(u16::from_le_bytes([divert_address_lo, divert_address_hi]));
-        self.flag_toggle(FLAG_NO_INTERRUPTS, true);
+        self.flag_toggle(CpuFlags::NoInterrupts, true);
 
         self.increment_cycles(7);
         Ok(())
     }
 
     pub fn irq(&mut self, bus: &mut T) -> Result<(), CpuError> {
-        if self.flag_check(FLAG_NO_INTERRUPTS) {
+        if self.flag_check(CpuFlags::NoInterrupts) {
             return Ok(());
         }
         self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)
@@ -460,17 +471,17 @@ impl<T: Bus> MOS6502<T> {
 
     /// Check if specified flag is set
     #[inline]
-    pub fn flag_check(&self, flag: u8) -> bool {
-        self.status_register & flag != 0
+    pub fn flag_check(&self, flag: CpuFlags) -> bool {
+        self.status_register & flag.as_u8() != 0
     }
 
     /// Turn specified flag on/off
     #[inline]
-    fn flag_toggle(&mut self, f: u8, value: bool) {
+    fn flag_toggle(&mut self, f: CpuFlags, value: bool) {
         if value {
-            self.status_register |= f; // set flag
+            self.status_register |= f.as_u8(); // set flag
         } else {
-            self.status_register &= !f; // clear flag
+            self.status_register &= !f.as_u8(); // clear flag
         }
     }
 

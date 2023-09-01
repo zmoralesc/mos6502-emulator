@@ -10,7 +10,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if !self.flag_check(FLAG_CARRY) {
+        if !self.flag_check(CpuFlags::Carry) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -26,7 +26,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if self.flag_check(FLAG_CARRY) {
+        if self.flag_check(CpuFlags::Carry) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -42,7 +42,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if self.flag_check(FLAG_ZERO) {
+        if self.flag_check(CpuFlags::Zero) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -58,7 +58,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if self.flag_check(FLAG_NEGATIVE) {
+        if self.flag_check(CpuFlags::Negative) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -74,7 +74,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if !self.flag_check(FLAG_ZERO) {
+        if !self.flag_check(CpuFlags::Zero) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -90,7 +90,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if !self.flag_check(FLAG_NEGATIVE) {
+        if !self.flag_check(CpuFlags::Negative) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -106,7 +106,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if !self.flag_check(FLAG_OVERFLOW) {
+        if !self.flag_check(CpuFlags::Overflow) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);
@@ -122,7 +122,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode),
         };
-        if self.flag_check(FLAG_OVERFLOW) {
+        if self.flag_check(CpuFlags::Overflow) {
             self.set_program_counter(addr);
         }
         self.increment_cycles(1);

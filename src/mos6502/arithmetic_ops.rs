@@ -13,17 +13,20 @@ impl<T: Bus> MOS6502<T> {
         self.accumulator = self
             .accumulator
             .wrapping_add(value)
-            .wrapping_add(self.flag_check(FLAG_CARRY) as u8);
+            .wrapping_add(self.flag_check(CpuFlags::Carry) as u8);
 
         let overflow: bool =
             sign_bits_match && ((self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
         let carry = self.accumulator < old_value || (self.accumulator == old_value && value != 0);
 
-        self.flag_toggle(FLAG_NEGATIVE, self.accumulator & NEGATIVE_BIT_MASK != 0);
-        self.flag_toggle(FLAG_ZERO, self.accumulator == 0);
-        self.flag_toggle(FLAG_CARRY, carry);
-        self.flag_toggle(FLAG_OVERFLOW, overflow);
+        self.flag_toggle(
+            CpuFlags::Negative,
+            self.accumulator & NEGATIVE_BIT_MASK != 0,
+        );
+        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_toggle(CpuFlags::Carry, carry);
+        self.flag_toggle(CpuFlags::Overflow, overflow);
 
         Ok(())
     }

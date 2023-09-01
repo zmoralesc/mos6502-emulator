@@ -16,9 +16,9 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(CpuError::InvalidAddressingMode),
         };
 
-        self.flag_toggle(FLAG_NEGATIVE, operand & (1 << 7) != 0);
-        self.flag_toggle(FLAG_OVERFLOW, operand & (1 << 6) != 0);
-        self.flag_toggle(FLAG_ZERO, operand & self.accumulator == 0);
+        self.flag_toggle(CpuFlags::Negative, operand & (1 << 7) != 0);
+        self.flag_toggle(CpuFlags::Overflow, operand & (1 << 6) != 0);
+        self.flag_toggle(CpuFlags::Zero, operand & self.accumulator == 0);
 
         self.increment_cycles(1);
         Ok(())
