@@ -40,7 +40,7 @@ bitflags! {
 impl CpuFlags {
     #[inline]
     pub const fn as_u8(&self) -> u8 {
-        self.bits()
+        self.0
     }
 
     #[inline]
@@ -437,13 +437,12 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_hi)?;
         self.push_to_stack(bus, return_address_lo)?;
 
-        let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, (self.status_register & !CpuFlags::Break).as_u8()),
-            InterruptKind::Nmi => (0xFFFA, (self.status_register & !CpuFlags::Break).as_u8()),
-            InterruptKind::Brk => (0xFFFE, (self.status_register | CpuFlags::Break).as_u8()),
+        let (vector_address, status_register_value): (u16, CpuFlags) = match kind {
+            InterruptKind::Irq => (0xFFFE, self.status_register & !CpuFlags::Break),
+            InterruptKind::Nmi => (0xFFFA, self.status_register & !CpuFlags::Break),
+            InterruptKind::Brk => (0xFFFE, self.status_register | CpuFlags::Break),
         };
-
-        self.push_to_stack(bus, status_register_value | CpuFlags::Unused.as_u8())?;
+        self.push_to_stack(bus, (status_register_value | CpuFlags::Unused).as_u8())?;
 
         let divert_address_lo = bus.read(vector_address)?;
         let divert_address_hi = bus.read(vector_address + 1)?;
