@@ -10,7 +10,7 @@ impl<T: Bus> MOS6502<T> {
     pub(super) fn php(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.push_to_stack(
             bus,
-            self.status_register | (CpuFlags::Break | CpuFlags::Unused).as_u8(),
+            (self.status_register | CpuFlags::Break | CpuFlags::Unused).as_u8(),
         )?;
         self.increment_cycles(3);
         Ok(())
@@ -29,7 +29,7 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn plp(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.status_register =
-            self.pop_from_stack(bus)? | (CpuFlags::Break | CpuFlags::Unused).as_u8();
+            CpuFlags::from_u8(self.pop_from_stack(bus)?) | CpuFlags::Break | CpuFlags::Unused;
         self.increment_cycles(4);
         Ok(())
     }

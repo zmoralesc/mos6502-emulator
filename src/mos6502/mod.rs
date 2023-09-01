@@ -22,8 +22,11 @@ pub trait Bus {
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
 }
 
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub struct CpuFlags(u8);
+
 bitflags! {
-    pub struct CpuFlags: u8 {
+    impl CpuFlags: u8 {
         const Negative = 1 << 7;
         const Overflow = 1 << 6;
         const Unused = 1 << 5;
@@ -38,6 +41,10 @@ bitflags! {
 impl CpuFlags {
     pub const fn as_u8(&self) -> u8 {
         self.bits() as u8
+    }
+
+    pub fn from_u8(value: u8) -> Self {
+        Self(value)
     }
 }
 
@@ -83,7 +90,7 @@ pub struct MOS6502<T: Bus> {
     x_register: u8,
     y_register: u8,
     stack_pointer: u8,
-    status_register: u8,
+    status_register: CpuFlags,
     program_counter: u16,
     cycles: u64,
     #[serde(skip_serializing, skip_deserializing)]
@@ -362,7 +369,7 @@ impl<T: Bus> MOS6502<T> {
             y_register: u8::MIN,
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
-            status_register: (CpuFlags::Unused | CpuFlags::Break).as_u8(),
+            status_register: CpuFlags::Unused | CpuFlags::Break,
             cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
         })
@@ -430,9 +437,9 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_lo)?;
 
         let (vector_address, status_register_value): (u16, u8) = match kind {
-            InterruptKind::Irq => (0xFFFE, self.status_register & !CpuFlags::Break.as_u8()),
-            InterruptKind::Nmi => (0xFFFA, self.status_register & !CpuFlags::Break.as_u8()),
-            InterruptKind::Brk => (0xFFFE, self.status_register | CpuFlags::Break.as_u8()),
+            InterruptKind::Irq => (0xFFFE, (self.status_register & !CpuFlags::Break).as_u8()),
+            InterruptKind::Nmi => (0xFFFA, (self.status_register & !CpuFlags::Break).as_u8()),
+            InterruptKind::Brk => (0xFFFE, (self.status_register | CpuFlags::Break).as_u8()),
         };
 
         self.push_to_stack(bus, status_register_value | CpuFlags::Unused.as_u8())?;
@@ -473,16 +480,16 @@ impl<T: Bus> MOS6502<T> {
     /// Check if specified flag is set
     #[inline]
     pub fn flag_check(&self, flag: CpuFlags) -> bool {
-        self.status_register & flag.as_u8() != 0
+        (self.status_register & flag).as_u8() != 0
     }
 
     /// Turn specified flag on/off
     #[inline]
     fn flag_toggle(&mut self, f: CpuFlags, value: bool) {
         if value {
-            self.status_register |= f.as_u8(); // set flag
+            self.status_register |= f; // set flag
         } else {
-            self.status_register &= !f.as_u8(); // clear flag
+            self.status_register &= !f; // clear flag
         }
     }
 

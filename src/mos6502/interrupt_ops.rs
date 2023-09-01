@@ -7,7 +7,7 @@ impl<T: Bus> MOS6502<T> {
 
     pub(super) fn rti(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.status_register =
-            self.pop_from_stack(bus)? | (CpuFlags::Break | CpuFlags::Unused).as_u8();
+            CpuFlags::from_u8(self.pop_from_stack(bus)?) | CpuFlags::Break | CpuFlags::Unused;
         let return_address_lo = self.pop_from_stack(bus)?;
         let return_address_hi = self.pop_from_stack(bus)?;
 
