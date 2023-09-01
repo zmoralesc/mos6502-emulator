@@ -39,10 +39,12 @@ bitflags! {
 }
 
 impl CpuFlags {
+    #[inline]
     pub const fn as_u8(&self) -> u8 {
         self.bits() as u8
     }
 
+    #[inline]
     pub fn from_u8(value: u8) -> Self {
         Self(value)
     }
