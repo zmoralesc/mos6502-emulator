@@ -40,7 +40,7 @@ bitflags! {
 impl CpuFlags {
     #[inline]
     pub const fn as_u8(&self) -> u8 {
-        self.bits() as u8
+        self.bits()
     }
 
     #[inline]
