@@ -363,8 +363,8 @@ impl<T: Bus> Default for OpcodeFunctionArray<T> {
 
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
-    pub fn new() -> Result<Self, CpuError> {
-        Ok(Self {
+    pub fn new() -> Self {
+        Self {
             accumulator: u8::MIN,
             x_register: u8::MIN,
             y_register: u8::MIN,
@@ -373,7 +373,7 @@ impl<T: Bus> MOS6502<T> {
             status_register: CpuFlags::Unused | CpuFlags::Break,
             cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
-        })
+        }
     }
 
     #[inline]
