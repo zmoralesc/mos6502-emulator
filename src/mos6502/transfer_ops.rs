@@ -35,7 +35,10 @@ macro_rules! transfer_register {
         $target_register = $source_register;
 
         $cpu.flag_toggle(CpuFlags::Zero, $target_register == 0);
-        $cpu.flag_toggle(CpuFlags::Negative, $target_register & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_toggle(
+            CpuFlags::Negative,
+            $target_register & NEGATIVE_BIT_MASK != 0,
+        );
         return Ok(());
     };
 }

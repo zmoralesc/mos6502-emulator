@@ -361,6 +361,12 @@ impl<T: Bus> Default for OpcodeFunctionArray<T> {
     }
 }
 
+impl<T: Bus> Default for MOS6502<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Bus> MOS6502<T> {
     /// Create new instance of MOS6502
     pub fn new() -> Self {
