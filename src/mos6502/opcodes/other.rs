@@ -1,19 +1,19 @@
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn nop(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn nop(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         self.increment_cycles(2);
         Ok(())
     }
 
-    pub(super) fn bit(
+    pub(in crate::mos6502) fn bit(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
 
         self.flag_toggle(CpuFlags::Negative, operand & (1 << 7) != 0);

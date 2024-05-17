@@ -1,7 +1,7 @@
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn and(
+    pub(in crate::mos6502) fn and(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -9,7 +9,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator &= operand;
         self.flag_toggle(
@@ -20,7 +20,7 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn eor(
+    pub(in crate::mos6502) fn eor(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -28,7 +28,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator ^= operand;
         self.flag_toggle(
@@ -39,7 +39,7 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn ora(
+    pub(in crate::mos6502) fn ora(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -47,7 +47,7 @@ impl<T: Bus> MOS6502<T> {
         let operand = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator |= operand;
         self.flag_toggle(

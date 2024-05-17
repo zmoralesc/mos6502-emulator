@@ -1,14 +1,14 @@
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn bcc(
+    pub(in crate::mos6502) fn bcc(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if !self.flag_check(CpuFlags::Carry) {
             self.set_program_counter(addr);
@@ -17,14 +17,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bcs(
+    pub(in crate::mos6502) fn bcs(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if self.flag_check(CpuFlags::Carry) {
             self.set_program_counter(addr);
@@ -33,14 +33,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn beq(
+    pub(in crate::mos6502) fn beq(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if self.flag_check(CpuFlags::Zero) {
             self.set_program_counter(addr);
@@ -49,14 +49,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bmi(
+    pub(in crate::mos6502) fn bmi(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if self.flag_check(CpuFlags::Negative) {
             self.set_program_counter(addr);
@@ -65,14 +65,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bne(
+    pub(in crate::mos6502) fn bne(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if !self.flag_check(CpuFlags::Zero) {
             self.set_program_counter(addr);
@@ -81,14 +81,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bpl(
+    pub(in crate::mos6502) fn bpl(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if !self.flag_check(CpuFlags::Negative) {
             self.set_program_counter(addr);
@@ -97,14 +97,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bvc(
+    pub(in crate::mos6502) fn bvc(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if !self.flag_check(CpuFlags::Overflow) {
             self.set_program_counter(addr);
@@ -113,14 +113,14 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn bvs(
+    pub(in crate::mos6502) fn bvs(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         if self.flag_check(CpuFlags::Overflow) {
             self.set_program_counter(addr);

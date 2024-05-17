@@ -1,4 +1,4 @@
-use super::*;
+use crate::mos6502::*;
 use std::cmp::Ordering;
 
 impl<T: Bus> MOS6502<T> {
@@ -12,7 +12,7 @@ impl<T: Bus> MOS6502<T> {
         let operand: u8 = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
 
         self.increment_cycles(1);
@@ -36,7 +36,7 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn cmp(
+    pub(in crate::mos6502) fn cmp(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -44,7 +44,7 @@ impl<T: Bus> MOS6502<T> {
         self.compare_register(self.accumulator, bus, address_mode)
     }
 
-    pub(super) fn cpx(
+    pub(in crate::mos6502) fn cpx(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -52,7 +52,7 @@ impl<T: Bus> MOS6502<T> {
         self.compare_register(self.x_register, bus, address_mode)
     }
 
-    pub(super) fn cpy(
+    pub(in crate::mos6502) fn cpy(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,

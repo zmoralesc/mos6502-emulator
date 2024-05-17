@@ -1,15 +1,4 @@
-mod arithmetic_ops;
-mod branch_ops;
-mod comparison_ops;
-mod dec_and_inc_ops;
-mod flag_ops;
-mod interrupt_ops;
-mod jump_ops;
-mod logical_ops;
-mod other_ops;
-mod shift_and_rotate_ops;
-mod stack_ops;
-mod transfer_ops;
+mod opcodes;
 
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
@@ -68,8 +57,8 @@ enum OpcodeOperand {
     None,
 }
 
-#[derive(Clone, Copy)]
-enum AddressingMode {
+#[derive(Clone, Copy, Debug)]
+pub enum AddressingMode {
     Accumulator,
     Absolute,
     AbsoluteXIndex,

@@ -1,7 +1,7 @@
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn asl(
+    pub(in crate::mos6502) fn asl(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -24,12 +24,12 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(CpuFlags::Zero, value == 0);
                 bus.write(w, value)?;
             }
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         Ok(())
     }
 
-    pub(super) fn lsr(
+    pub(in crate::mos6502) fn lsr(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -49,13 +49,13 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(CpuFlags::Carry, bit0_is_set);
                 bus.write(w, value)?;
             }
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.flag_toggle(CpuFlags::Negative, false);
         Ok(())
     }
 
-    pub(super) fn rol(
+    pub(in crate::mos6502) fn rol(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -81,12 +81,12 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
                 bus.write(w, new_value)?;
             }
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         }
         Ok(())
     }
 
-    pub(super) fn ror(
+    pub(in crate::mos6502) fn ror(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -112,7 +112,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_toggle(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
                 bus.write(w, new_value)?;
             }
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         }
         Ok(())
     }

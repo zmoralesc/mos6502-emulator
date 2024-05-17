@@ -1,21 +1,21 @@
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn jmp(
+    pub(in crate::mos6502) fn jmp(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.set_program_counter(new_pc_value);
         self.increment_cycles(1);
         Ok(())
     }
 
-    pub(super) fn jsr(
+    pub(in crate::mos6502) fn jsr(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -29,14 +29,18 @@ impl<T: Bus> MOS6502<T> {
 
         let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.set_program_counter(new_pc_value);
         self.increment_cycles(6);
         Ok(())
     }
 
-    pub(super) fn rts(&mut self, bus: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn rts(
+        &mut self,
+        bus: &mut T,
+        _: AddressingMode,
+    ) -> Result<(), CpuError> {
         let return_address_lo = self.pop_from_stack(bus)?;
         let return_address_hi = self.pop_from_stack(bus)?;
 

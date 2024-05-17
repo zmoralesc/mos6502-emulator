@@ -1,4 +1,4 @@
-use super::*;
+use crate::mos6502::*;
 
 macro_rules! decrement_register {
     ($cpu:expr, $register:expr) => {
@@ -25,14 +25,14 @@ macro_rules! increment_register {
 }
 
 impl<T: Bus> MOS6502<T> {
-    pub(super) fn dec(
+    pub(in crate::mos6502) fn dec(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         let value = bus.read(addr)?.wrapping_sub(1);
         bus.write(addr, value)?;
@@ -44,22 +44,22 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         decrement_register!(self, self.x_register);
     }
 
-    pub(super) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         decrement_register!(self, self.y_register);
     }
 
-    pub(super) fn inc(
+    pub(in crate::mos6502) fn inc(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<(), CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         let value = bus.read(addr)?.wrapping_add(1);
         bus.write(addr, value)?;
@@ -71,11 +71,11 @@ impl<T: Bus> MOS6502<T> {
         Ok(())
     }
 
-    pub(super) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         increment_register!(self, self.x_register);
     }
 
-    pub(super) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
         increment_register!(self, self.y_register);
     }
 }

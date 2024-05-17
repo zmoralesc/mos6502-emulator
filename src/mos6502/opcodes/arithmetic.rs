@@ -1,6 +1,6 @@
 use crate::error::CpuError;
 
-use super::*;
+use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
     #[inline(always)]
@@ -32,7 +32,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     // add to accumulator with carry
-    pub(super) fn adc(
+    pub(in crate::mos6502) fn adc(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -40,13 +40,13 @@ impl<T: Bus> MOS6502<T> {
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.add_to_accumulator_with_carry(value)
     }
 
     // subtract from accumulator with carry
-    pub(super) fn sbc(
+    pub(in crate::mos6502) fn sbc(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
@@ -54,7 +54,7 @@ impl<T: Bus> MOS6502<T> {
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
-            _ => return Err(CpuError::InvalidAddressingMode),
+            _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.add_to_accumulator_with_carry(!value)
     }

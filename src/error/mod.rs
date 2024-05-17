@@ -1,9 +1,11 @@
 use thiserror::Error;
 
+use crate::mos6502::AddressingMode;
+
 #[derive(Error, Debug)]
 pub enum CpuError {
     #[error("invalid addressing mode")]
-    InvalidAddressingMode,
+    InvalidAddressingMode(AddressingMode),
     #[error("opcode not implemented")]
     OpcodeNotImplemented,
     #[error("invalid bus operation")]
