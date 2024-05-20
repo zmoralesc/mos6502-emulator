@@ -26,14 +26,14 @@ bitflags! {
     }
 }
 
-impl CpuFlags {
-    #[inline]
-    pub const fn as_u8(&self) -> u8 {
+impl Into<u8> for CpuFlags {
+    fn into(self) -> u8 {
         self.0
     }
+}
 
-    #[inline]
-    pub fn from_u8(value: u8) -> Self {
+impl From<u8> for CpuFlags {
+    fn from(value: u8) -> Self {
         Self(value)
     }
 }
@@ -437,7 +437,7 @@ impl<T: Bus> MOS6502<T> {
             InterruptKind::Nmi => (0xFFFA, self.status_register & !CpuFlags::Break),
             InterruptKind::Brk => (0xFFFE, self.status_register | CpuFlags::Break),
         };
-        self.push_to_stack(bus, (status_register_value | CpuFlags::Unused).as_u8())?;
+        self.push_to_stack(bus, (status_register_value | CpuFlags::Unused).into())?;
 
         let divert_address_lo = bus.read(vector_address)?;
         let divert_address_hi = bus.read(vector_address + 1)?;
@@ -475,7 +475,7 @@ impl<T: Bus> MOS6502<T> {
     /// Check if specified flag is set
     #[inline]
     pub fn flag_check(&self, flag: CpuFlags) -> bool {
-        (self.status_register & flag).as_u8() != 0
+        <CpuFlags as Into<u8>>::into(self.status_register & flag) != 0
     }
 
     /// Turn specified flag on/off

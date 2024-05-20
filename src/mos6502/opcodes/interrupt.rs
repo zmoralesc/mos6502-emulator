@@ -15,7 +15,7 @@ impl<T: Bus> MOS6502<T> {
         _: AddressingMode,
     ) -> Result<(), CpuError> {
         self.status_register =
-            CpuFlags::from_u8(self.pop_from_stack(bus)?) | CpuFlags::Break | CpuFlags::Unused;
+            CpuFlags::from(self.pop_from_stack(bus)?) | CpuFlags::Break | CpuFlags::Unused;
         let return_address_lo = self.pop_from_stack(bus)?;
         let return_address_hi = self.pop_from_stack(bus)?;
 
