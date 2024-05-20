@@ -475,7 +475,7 @@ impl<T: Bus> MOS6502<T> {
     /// Check if specified flag is set
     #[inline]
     pub fn flag_check(&self, flag: CpuFlags) -> bool {
-        <CpuFlags as Into<u8>>::into(self.status_register & flag) != 0
+        !(self.status_register & flag).is_empty()
     }
 
     /// Turn specified flag on/off
