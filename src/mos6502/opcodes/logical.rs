@@ -12,11 +12,11 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator &= operand;
-        self.flag_toggle(
+        self.flag_set(
             CpuFlags::Negative,
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
-        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_set(CpuFlags::Zero, self.accumulator == 0);
         Ok(())
     }
 
@@ -31,11 +31,11 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator ^= operand;
-        self.flag_toggle(
+        self.flag_set(
             CpuFlags::Negative,
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
-        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_set(CpuFlags::Zero, self.accumulator == 0);
         Ok(())
     }
 
@@ -50,11 +50,11 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.accumulator |= operand;
-        self.flag_toggle(
+        self.flag_set(
             CpuFlags::Negative,
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
-        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_set(CpuFlags::Zero, self.accumulator == 0);
         Ok(())
     }
 }

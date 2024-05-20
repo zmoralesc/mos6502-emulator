@@ -31,8 +31,8 @@ impl<T: Bus> MOS6502<T> {
     ) -> Result<(), CpuError> {
         self.accumulator = self.pop_from_stack(bus)?;
         self.increment_cycles(4);
-        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
-        self.flag_toggle(
+        self.flag_set(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_set(
             CpuFlags::Negative,
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );

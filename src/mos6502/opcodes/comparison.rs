@@ -17,20 +17,20 @@ impl<T: Bus> MOS6502<T> {
 
         self.increment_cycles(1);
         let result = register.wrapping_sub(operand);
-        self.flag_toggle(CpuFlags::Negative, result & NEGATIVE_BIT_MASK != 0);
+        self.flag_set(CpuFlags::Negative, result & NEGATIVE_BIT_MASK != 0);
 
         match register.cmp(&operand) {
             Ordering::Less => {
-                self.flag_toggle(CpuFlags::Zero, false);
-                self.flag_toggle(CpuFlags::Carry, false);
+                self.flag_set(CpuFlags::Zero, false);
+                self.flag_set(CpuFlags::Carry, false);
             }
             Ordering::Equal => {
-                self.flag_toggle(CpuFlags::Zero, true);
-                self.flag_toggle(CpuFlags::Carry, true);
+                self.flag_set(CpuFlags::Zero, true);
+                self.flag_set(CpuFlags::Carry, true);
             }
             Ordering::Greater => {
-                self.flag_toggle(CpuFlags::Zero, false);
-                self.flag_toggle(CpuFlags::Carry, true);
+                self.flag_set(CpuFlags::Zero, false);
+                self.flag_set(CpuFlags::Carry, true);
             }
         }
         Ok(())

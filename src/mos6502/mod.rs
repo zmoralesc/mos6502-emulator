@@ -26,9 +26,9 @@ bitflags! {
     }
 }
 
-impl Into<u8> for CpuFlags {
-    fn into(self) -> u8 {
-        self.0
+impl From<CpuFlags> for u8 {
+    fn from(val: CpuFlags) -> Self {
+        val.0
     }
 }
 
@@ -443,7 +443,7 @@ impl<T: Bus> MOS6502<T> {
         let divert_address_hi = bus.read(vector_address + 1)?;
 
         self.set_program_counter(u16::from_le_bytes([divert_address_lo, divert_address_hi]));
-        self.flag_toggle(CpuFlags::NoInterrupts, true);
+        self.flag_set(CpuFlags::NoInterrupts, true);
 
         self.increment_cycles(7);
         Ok(())
@@ -475,17 +475,13 @@ impl<T: Bus> MOS6502<T> {
     /// Check if specified flag is set
     #[inline]
     pub fn flag_check(&self, flag: CpuFlags) -> bool {
-        !(self.status_register & flag).is_empty()
+        flag.intersects(self.status_register)
     }
 
     /// Turn specified flag on/off
     #[inline]
-    fn flag_toggle(&mut self, f: CpuFlags, value: bool) {
-        if value {
-            self.status_register |= f; // set flag
-        } else {
-            self.status_register &= !f; // clear flag
-        }
+    fn flag_set(&mut self, f: CpuFlags, value: bool) {
+        self.status_register.set(f, value);
     }
 
     #[inline]

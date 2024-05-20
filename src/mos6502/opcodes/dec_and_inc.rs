@@ -4,8 +4,8 @@ macro_rules! decrement_register {
     ($cpu:expr, $register:expr) => {
         $register = $register.wrapping_sub(1);
 
-        $cpu.flag_toggle(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
-        $cpu.flag_toggle(CpuFlags::Zero, $register == 0);
+        $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_set(CpuFlags::Zero, $register == 0);
 
         $cpu.increment_cycles(2);
         return Ok(());
@@ -16,8 +16,8 @@ macro_rules! increment_register {
     ($cpu:expr, $register:expr) => {
         $register = $register.wrapping_add(1);
 
-        $cpu.flag_toggle(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
-        $cpu.flag_toggle(CpuFlags::Zero, $register == 0);
+        $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_set(CpuFlags::Zero, $register == 0);
 
         $cpu.increment_cycles(2);
         return Ok(());
@@ -37,8 +37,8 @@ impl<T: Bus> MOS6502<T> {
         let value = bus.read(addr)?.wrapping_sub(1);
         bus.write(addr, value)?;
 
-        self.flag_toggle(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
-        self.flag_toggle(CpuFlags::Zero, value == 0);
+        self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
+        self.flag_set(CpuFlags::Zero, value == 0);
 
         self.increment_cycles(3);
         Ok(())
@@ -64,8 +64,8 @@ impl<T: Bus> MOS6502<T> {
         let value = bus.read(addr)?.wrapping_add(1);
         bus.write(addr, value)?;
 
-        self.flag_toggle(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
-        self.flag_toggle(CpuFlags::Zero, value == 0);
+        self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
+        self.flag_set(CpuFlags::Zero, value == 0);
 
         self.increment_cycles(3);
         Ok(())

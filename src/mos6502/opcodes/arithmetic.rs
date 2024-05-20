@@ -20,13 +20,13 @@ impl<T: Bus> MOS6502<T> {
 
         let carry = self.accumulator < old_value || (self.accumulator == old_value && value != 0);
 
-        self.flag_toggle(
+        self.flag_set(
             CpuFlags::Negative,
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
-        self.flag_toggle(CpuFlags::Zero, self.accumulator == 0);
-        self.flag_toggle(CpuFlags::Carry, carry);
-        self.flag_toggle(CpuFlags::Overflow, overflow);
+        self.flag_set(CpuFlags::Zero, self.accumulator == 0);
+        self.flag_set(CpuFlags::Carry, carry);
+        self.flag_set(CpuFlags::Overflow, overflow);
 
         Ok(())
     }

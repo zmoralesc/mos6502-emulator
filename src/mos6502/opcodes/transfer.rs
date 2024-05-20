@@ -23,8 +23,8 @@ macro_rules! load_value_to_register {
             _ => return Err(CpuError::InvalidAddressingMode($address_mode)),
         };
 
-        $cpu.flag_toggle(CpuFlags::Zero, $register == 0);
-        $cpu.flag_toggle(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
+        $cpu.flag_set(CpuFlags::Zero, $register == 0);
+        $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
         return Ok(());
     };
 }
@@ -34,8 +34,8 @@ macro_rules! transfer_register {
         $cpu.increment_cycles(2);
         $target_register = $source_register;
 
-        $cpu.flag_toggle(CpuFlags::Zero, $target_register == 0);
-        $cpu.flag_toggle(
+        $cpu.flag_set(CpuFlags::Zero, $target_register == 0);
+        $cpu.flag_set(
             CpuFlags::Negative,
             $target_register & NEGATIVE_BIT_MASK != 0,
         );
