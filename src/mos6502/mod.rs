@@ -466,9 +466,9 @@ impl<T: Bus> MOS6502<T> {
 
     /// Step over one CPU instruction
     pub fn step(&mut self, bus: &mut T) -> Result<(), CpuError> {
-        let opc = bus.read(self.program_counter)?;
+        let opcode = bus.read(self.program_counter)? as usize;
         self.increment_program_counter(1);
-        let (ref opcode_func, address_mode) = self.opcode_array.0[opc as usize];
+        let (ref opcode_func, address_mode) = self.opcode_array.0[opcode];
         opcode_func(self, bus, address_mode)
     }
 
