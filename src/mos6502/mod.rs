@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::*;
 
 pub trait Bus {
-    fn read(&self, address: u16) -> Result<u8, BusError>;
+    fn read(&mut self, address: u16) -> Result<u8, BusError>;
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError>;
 }
 
@@ -409,7 +409,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     #[inline]
-    fn pop_from_stack(&mut self, bus: &T) -> Result<u8, BusError> {
+    fn pop_from_stack(&mut self, bus: &mut T) -> Result<u8, BusError> {
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
         bus.read(STACK_BASE + self.stack_pointer as u16)
     }
