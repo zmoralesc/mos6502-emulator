@@ -8,14 +8,14 @@ impl<T: Bus> MOS6502<T> {
         register: u8,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
-        let operand: u8 = match self.resolve_operand(bus, address_mode)? {
+    ) -> Result<u32, CpuError> {
+        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
+        let operand: u8 = match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
 
-        self.increment_cycles(1);
         let result = register.wrapping_sub(operand);
         self.flag_set(CpuFlags::Negative, result & NEGATIVE_BIT_MASK != 0);
 
@@ -33,14 +33,14 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Carry, true);
             }
         }
-        Ok(())
+        Ok(cycles + 1)
     }
 
     pub(in crate::mos6502) fn cmp(
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
+    ) -> Result<u32, CpuError> {
         self.compare_register(self.accumulator, bus, address_mode)
     }
 
@@ -48,7 +48,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
+    ) -> Result<u32, CpuError> {
         self.compare_register(self.x_register, bus, address_mode)
     }
 
@@ -56,7 +56,7 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
+    ) -> Result<u32, CpuError> {
         self.compare_register(self.y_register, bus, address_mode)
     }
 }

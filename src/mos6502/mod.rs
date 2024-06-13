@@ -83,7 +83,6 @@ pub struct MOS6502<T: Bus> {
     stack_pointer: u8,
     status_register: CpuFlags,
     program_counter: u16,
-    cycles: u64,
     #[serde(skip_serializing, skip_deserializing)]
     opcode_array: OpcodeFunctionArray<T>,
 }
@@ -367,7 +366,6 @@ impl<T: Bus> MOS6502<T> {
             program_counter: u16::MIN,
             stack_pointer: u8::MAX,
             status_register: CpuFlags::Unused | CpuFlags::Break,
-            cycles: u64::MIN,
             opcode_array: OpcodeFunctionArray::default(),
         }
     }
@@ -403,12 +401,6 @@ impl<T: Bus> MOS6502<T> {
         self.program_counter = value;
     }
 
-    /// Return number of elapsed CPU cycles
-    #[inline]
-    pub fn cycles(&self) -> u64 {
-        self.cycles
-    }
-
     #[inline]
     fn pop_from_stack(&mut self, bus: &mut T) -> Result<u8, BusError> {
         self.stack_pointer = self.stack_pointer.wrapping_add(1);
@@ -427,7 +419,7 @@ impl<T: Bus> MOS6502<T> {
         return_address: u16,
         kind: InterruptKind,
         bus: &mut T,
-    ) -> Result<(), CpuError> {
+    ) -> Result<u32, CpuError> {
         let (return_address_lo, return_address_hi): (u8, u8) = return_address.to_le_bytes().into();
 
         self.push_to_stack(bus, return_address_hi)?;
@@ -446,22 +438,21 @@ impl<T: Bus> MOS6502<T> {
         self.set_program_counter(u16::from_le_bytes([divert_address_lo, divert_address_hi]));
         self.flag_set(CpuFlags::NoInterrupts, true);
 
-        self.increment_cycles(7);
-        Ok(())
+        Ok(7)
     }
 
-    pub fn irq(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    pub fn irq(&mut self, bus: &mut T) -> Result<u32, CpuError> {
         if self.flag_check(CpuFlags::NoInterrupts) {
-            return Ok(());
+            return Ok(0);
         }
         self.perform_interrupt(self.program_counter, InterruptKind::Irq, bus)
     }
 
-    pub fn nmi(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    pub fn nmi(&mut self, bus: &mut T) -> Result<u32, CpuError> {
         self.perform_interrupt(self.program_counter, InterruptKind::Nmi, bus)
     }
 
-    fn not_implemented(&mut self, _: &mut impl Bus, _: AddressingMode) -> Result<(), CpuError> {
+    fn not_implemented(&mut self, _: &mut impl Bus, _: AddressingMode) -> Result<u32, CpuError> {
         Err(CpuError::OpcodeNotImplemented)
     }
 
@@ -488,11 +479,6 @@ impl<T: Bus> MOS6502<T> {
     #[inline]
     fn increment_program_counter(&mut self, n: u16) {
         self.set_program_counter(self.program_counter.wrapping_add(n));
-    }
-
-    #[inline]
-    fn increment_cycles(&mut self, n: u64) {
-        self.cycles = self.cycles.wrapping_add(n);
     }
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate

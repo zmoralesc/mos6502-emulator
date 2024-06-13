@@ -7,8 +7,7 @@ macro_rules! decrement_register {
         $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
         $cpu.flag_set(CpuFlags::Zero, $register == 0);
 
-        $cpu.increment_cycles(2);
-        return Ok(());
+        return Ok(2);
     };
 }
 
@@ -19,8 +18,7 @@ macro_rules! increment_register {
         $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
         $cpu.flag_set(CpuFlags::Zero, $register == 0);
 
-        $cpu.increment_cycles(2);
-        return Ok(());
+        return Ok(2);
     };
 }
 
@@ -29,8 +27,9 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
-        let addr = match self.resolve_operand(bus, address_mode)? {
+    ) -> Result<u32, CpuError> {
+        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
+        let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -40,15 +39,22 @@ impl<T: Bus> MOS6502<T> {
         self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
         self.flag_set(CpuFlags::Zero, value == 0);
 
-        self.increment_cycles(3);
-        Ok(())
+        Ok(cycles + 3)
     }
 
-    pub(in crate::mos6502) fn dex(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn dex(
+        &mut self,
+        _: &mut T,
+        _: AddressingMode,
+    ) -> Result<u32, CpuError> {
         decrement_register!(self, self.x_register);
     }
 
-    pub(in crate::mos6502) fn dey(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn dey(
+        &mut self,
+        _: &mut T,
+        _: AddressingMode,
+    ) -> Result<u32, CpuError> {
         decrement_register!(self, self.y_register);
     }
 
@@ -56,8 +62,9 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
-        let addr = match self.resolve_operand(bus, address_mode)? {
+    ) -> Result<u32, CpuError> {
+        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
+        let addr = match operand {
             OpcodeOperand::Address(addr) => addr,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -67,15 +74,22 @@ impl<T: Bus> MOS6502<T> {
         self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
         self.flag_set(CpuFlags::Zero, value == 0);
 
-        self.increment_cycles(3);
-        Ok(())
+        Ok(cycles + 3)
     }
 
-    pub(in crate::mos6502) fn inx(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn inx(
+        &mut self,
+        _: &mut T,
+        _: AddressingMode,
+    ) -> Result<u32, CpuError> {
         increment_register!(self, self.x_register);
     }
 
-    pub(in crate::mos6502) fn iny(&mut self, _: &mut T, _: AddressingMode) -> Result<(), CpuError> {
+    pub(in crate::mos6502) fn iny(
+        &mut self,
+        _: &mut T,
+        _: AddressingMode,
+    ) -> Result<u32, CpuError> {
         increment_register!(self, self.y_register);
     }
 }
