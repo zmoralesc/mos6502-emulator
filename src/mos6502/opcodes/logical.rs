@@ -18,7 +18,7 @@ impl<T: Bus> MOS6502<T> {
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
         self.flag_set(CpuFlags::Zero, self.accumulator == 0);
-        Ok(cycles)
+        Ok(cycles + 1)
     }
 
     pub(in crate::mos6502) fn eor(
@@ -38,7 +38,7 @@ impl<T: Bus> MOS6502<T> {
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
         self.flag_set(CpuFlags::Zero, self.accumulator == 0);
-        Ok(cycles)
+        Ok(cycles + 1)
     }
 
     pub(in crate::mos6502) fn ora(
@@ -58,6 +58,6 @@ impl<T: Bus> MOS6502<T> {
             self.accumulator & NEGATIVE_BIT_MASK != 0,
         );
         self.flag_set(CpuFlags::Zero, self.accumulator == 0);
-        Ok(cycles)
+        Ok(cycles + 1)
     }
 }

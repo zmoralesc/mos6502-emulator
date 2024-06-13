@@ -552,7 +552,7 @@ impl<T: Bus> MOS6502<T> {
                 let high_byte = bus.read(zeropage_address.wrapping_add(1) as u16)?;
 
                 let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
-                Ok((6, operand))
+                Ok((5, operand))
             }
             AddressingMode::IndirectYIndex => {
                 let zeropage_address = bus.read(self.program_counter)?;
@@ -565,7 +565,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
                 let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
-                Ok((5 + overflow as u32, operand))
+                Ok((4 + overflow as u32, operand))
             }
             AddressingMode::Relative => {
                 let offset = bus.read(self.program_counter)?;
