@@ -48,7 +48,8 @@ enum InterruptKind {
     Brk,
 }
 
-type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<(), CpuError>;
+type OperandResult = Result<(u32, OpcodeOperand), CpuError>;
+type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<u32, CpuError>;
 struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode); 256]);
 
 enum OpcodeOperand {
@@ -465,7 +466,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Step over one CPU instruction
-    pub fn step(&mut self, bus: &mut T) -> Result<(), CpuError> {
+    pub fn step(&mut self, bus: &mut T) -> Result<u32, CpuError> {
         let opcode = bus.read(self.program_counter)? as usize;
         self.increment_program_counter(1);
         let (ref opcode_func, address_mode) = self.opcode_array.0[opcode];
@@ -496,16 +497,9 @@ impl<T: Bus> MOS6502<T> {
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
     #[inline]
-    fn resolve_operand(
-        &mut self,
-        bus: &mut T,
-        address_mode: AddressingMode,
-    ) -> Result<OpcodeOperand, CpuError> {
+    fn resolve_operand(&mut self, bus: &mut T, address_mode: AddressingMode) -> OperandResult {
         match address_mode {
-            AddressingMode::Accumulator => {
-                self.increment_cycles(1);
-                Ok(OpcodeOperand::Byte(self.accumulator))
-            }
+            AddressingMode::Accumulator => Ok((1, OpcodeOperand::Byte(self.accumulator))),
             AddressingMode::Absolute => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
@@ -514,8 +508,7 @@ impl<T: Bus> MOS6502<T> {
 
                 let address = u16::from_le_bytes([low_byte, high_byte]);
 
-                self.increment_cycles(3);
-                Ok(OpcodeOperand::Address(address))
+                Ok((3, OpcodeOperand::Address(address)))
             }
             AddressingMode::AbsoluteXIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
@@ -524,14 +517,10 @@ impl<T: Bus> MOS6502<T> {
                 self.increment_program_counter(1);
 
                 let (low_byte, overflow) = low_byte.overflowing_add(self.x_register);
-                if overflow {
-                    high_byte = high_byte.wrapping_add(1);
-                    self.increment_cycles(1);
-                }
+                high_byte = high_byte.wrapping_add(overflow as u8);
 
-                self.increment_cycles(3);
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok(OpcodeOperand::Address(address))
+                Ok((3 + overflow as u32, OpcodeOperand::Address(address)))
             }
             AddressingMode::AbsoluteYIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
@@ -540,23 +529,19 @@ impl<T: Bus> MOS6502<T> {
                 self.increment_program_counter(1);
 
                 let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
-                if overflow {
-                    high_byte = high_byte.wrapping_add(1);
-                    self.increment_cycles(1);
-                }
+                high_byte = high_byte.wrapping_add(overflow as u8);
 
-                self.increment_cycles(3);
+                let cycles = 3 + overflow as u32;
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok(OpcodeOperand::Address(address))
+                Ok((cycles, OpcodeOperand::Address(address)))
             }
             AddressingMode::Immediate => {
                 let byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                self.increment_cycles(1);
-                Ok(OpcodeOperand::Byte(byte))
+                Ok((1, OpcodeOperand::Byte(byte)))
             }
-            AddressingMode::Implied => Ok(OpcodeOperand::None),
+            AddressingMode::Implied => Ok((0, OpcodeOperand::None)),
             AddressingMode::Indirect => {
                 let mut low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
@@ -568,10 +553,8 @@ impl<T: Bus> MOS6502<T> {
                 low_byte = bus.read(address)?;
                 high_byte = bus.read(address.wrapping_add(1))?;
 
-                self.increment_cycles(2);
-                Ok(OpcodeOperand::Address(u16::from_le_bytes([
-                    low_byte, high_byte,
-                ])))
+                let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
+                Ok((2, operand))
             }
             AddressingMode::XIndexIndirect => {
                 let mut zeropage_address: u8 = bus.read(self.program_counter)?;
@@ -582,10 +565,8 @@ impl<T: Bus> MOS6502<T> {
                 let low_byte = bus.read(zeropage_address as u16)?;
                 let high_byte = bus.read(zeropage_address.wrapping_add(1) as u16)?;
 
-                self.increment_cycles(6);
-                Ok(OpcodeOperand::Address(u16::from_le_bytes([
-                    low_byte, high_byte,
-                ])))
+                let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
+                Ok((6, operand))
             }
             AddressingMode::IndirectYIndex => {
                 let zeropage_address = bus.read(self.program_counter)?;
@@ -595,31 +576,30 @@ impl<T: Bus> MOS6502<T> {
                 let mut high_byte = bus.read(zeropage_address.wrapping_add(1) as u16)?;
 
                 let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
-                if overflow {
-                    high_byte = high_byte.wrapping_add(1);
-                    self.increment_cycles(1);
-                }
+                high_byte = high_byte.wrapping_add(overflow as u8);
 
-                self.increment_cycles(5);
-                Ok(OpcodeOperand::Address(u16::from_le_bytes([
-                    low_byte, high_byte,
-                ])))
+                let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
+                Ok((5 + overflow as u32, operand))
             }
             AddressingMode::Relative => {
                 let offset = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
+                let current_page = self.program_counter >> 8;
+
                 let offset = (offset as i8) as i16;
                 let new_program_counter = self.program_counter.wrapping_add_signed(offset);
 
-                Ok(OpcodeOperand::Address(new_program_counter))
+                let page_transition_ocurred = new_program_counter >> 8 != current_page;
+
+                let cycles = 1 + page_transition_ocurred as u32;
+                Ok((cycles, OpcodeOperand::Address(new_program_counter)))
             }
             AddressingMode::Zeropage => {
                 let zeropage_address = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                self.increment_cycles(2);
-                Ok(OpcodeOperand::Address(zeropage_address as u16))
+                Ok((2, OpcodeOperand::Address(zeropage_address as u16)))
             }
             AddressingMode::ZeropageXIndex => {
                 let offset = self.x_register;
@@ -628,9 +608,8 @@ impl<T: Bus> MOS6502<T> {
                 self.increment_program_counter(1);
 
                 let address = zeropage_address.wrapping_add(offset);
-                self.increment_cycles(3);
 
-                Ok(OpcodeOperand::Address(address as u16))
+                Ok((3, OpcodeOperand::Address(address as u16)))
             }
             AddressingMode::ZeropageYIndex => {
                 let offset = self.y_register;
@@ -639,9 +618,8 @@ impl<T: Bus> MOS6502<T> {
                 self.increment_program_counter(1);
 
                 let address = zeropage_address.wrapping_add(offset);
-                self.increment_cycles(3);
 
-                Ok(OpcodeOperand::Address(address as u16))
+                Ok((3, OpcodeOperand::Address(address as u16)))
             }
         }
     }

@@ -4,9 +4,8 @@ use crate::mos6502::*;
 
 impl<T: Bus> MOS6502<T> {
     #[inline(always)]
-    fn add_to_accumulator_with_carry(&mut self, value: u8) -> Result<(), CpuError> {
+    fn add_to_accumulator_with_carry(&mut self, value: u8) -> Result<u32, CpuError> {
         let old_value = self.accumulator;
-        self.increment_cycles(1);
 
         let sign_bits_match: bool = (!(self.accumulator ^ value) & NEGATIVE_BIT_MASK) != 0;
 
@@ -28,7 +27,7 @@ impl<T: Bus> MOS6502<T> {
         self.flag_set(CpuFlags::Carry, carry);
         self.flag_set(CpuFlags::Overflow, overflow);
 
-        Ok(())
+        Ok(1)
     }
 
     // add to accumulator with carry
@@ -36,13 +35,14 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
-        let value = match self.resolve_operand(bus, address_mode)? {
+    ) -> Result<u32, CpuError> {
+        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
+        let value = match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        self.add_to_accumulator_with_carry(value)
+        Ok(self.add_to_accumulator_with_carry(value)? + cycles)
     }
 
     // subtract from accumulator with carry
@@ -50,12 +50,13 @@ impl<T: Bus> MOS6502<T> {
         &mut self,
         bus: &mut T,
         address_mode: AddressingMode,
-    ) -> Result<(), CpuError> {
-        let value = match self.resolve_operand(bus, address_mode)? {
+    ) -> Result<u32, CpuError> {
+        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
+        let value = match operand {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        self.add_to_accumulator_with_carry(!value)
+        Ok(self.add_to_accumulator_with_carry(!value)? + cycles)
     }
 }
