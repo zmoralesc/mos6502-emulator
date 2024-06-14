@@ -27,7 +27,7 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        Ok(cycles)
+        Ok(cycles + 1)
     }
 
     pub(in crate::mos6502) fn lsr(
