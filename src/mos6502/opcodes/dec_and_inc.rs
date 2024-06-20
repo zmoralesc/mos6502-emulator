@@ -30,6 +30,7 @@ impl<T: Bus> MOS6502<T> {
     ) -> Result<u32, CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::AddressWithOverflow(addr, _) => addr,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         let value = bus.read(addr)?.wrapping_sub(1);
@@ -64,6 +65,7 @@ impl<T: Bus> MOS6502<T> {
     ) -> Result<u32, CpuError> {
         let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::AddressWithOverflow(addr, _) => addr,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         let value = bus.read(addr)?.wrapping_add(1);

@@ -23,6 +23,14 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
                 self.flag_set(CpuFlags::Zero, value == 0);
                 bus.write(w, value)?;
+            },
+            OpcodeOperand::AddressWithOverflow(w, _) => {
+                let mut value = bus.read(w)?;
+                self.flag_set(CpuFlags::Carry, value & NEGATIVE_BIT_MASK != 0);
+                value = value.wrapping_shl(1);
+                self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
+                self.flag_set(CpuFlags::Zero, value == 0);
+                bus.write(w, value)?;
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -42,6 +50,14 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Carry, bit0_is_set);
             }
             OpcodeOperand::Address(w) => {
+                let mut value = bus.read(w)?;
+                let bit0_is_set = value & 1 != 0;
+                value = value.wrapping_shr(1);
+                self.flag_set(CpuFlags::Zero, value == 0);
+                self.flag_set(CpuFlags::Carry, bit0_is_set);
+                bus.write(w, value)?;
+            },
+            OpcodeOperand::AddressWithOverflow(w, _) => {
                 let mut value = bus.read(w)?;
                 let bit0_is_set = value & 1 != 0;
                 value = value.wrapping_shr(1);
@@ -80,6 +96,15 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Zero, new_value == 0);
                 self.flag_set(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
                 bus.write(w, new_value)?;
+            },
+            OpcodeOperand::AddressWithOverflow(w, _) => {
+                let value = bus.read(w)?;
+                let bit7_is_set = value & NEGATIVE_BIT_MASK != 0;
+                let new_value: u8 = value.wrapping_shl(1) | carry_bit_mask;
+                self.flag_set(CpuFlags::Carry, bit7_is_set);
+                self.flag_set(CpuFlags::Zero, new_value == 0);
+                self.flag_set(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
+                bus.write(w, new_value)?;
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         }
@@ -104,6 +129,15 @@ impl<T: Bus> MOS6502<T> {
                 );
             }
             OpcodeOperand::Address(w) => {
+                let value = bus.read(w)?;
+                let bit0_is_set = value & 1 == 1;
+                let new_value: u8 = value.wrapping_shr(1) | carry_bit_mask;
+                self.flag_set(CpuFlags::Carry, bit0_is_set);
+                self.flag_set(CpuFlags::Zero, new_value == 0);
+                self.flag_set(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
+                bus.write(w, new_value)?;
+            },
+            OpcodeOperand::AddressWithOverflow(w, _) => {
                 let value = bus.read(w)?;
                 let bit0_is_set = value & 1 == 1;
                 let new_value: u8 = value.wrapping_shr(1) | carry_bit_mask;

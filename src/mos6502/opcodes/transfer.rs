@@ -2,12 +2,17 @@ use crate::mos6502::*;
 
 macro_rules! store_register_value {
     ($cpu:expr, $register:expr, $address_mode:ident, $bus:expr) => {
+        let mut extra_cycles = 0;
         let addr = match $cpu.resolve_operand($bus, $address_mode)? {
             OpcodeOperand::Address(addr) => addr,
+            OpcodeOperand::AddressWithOverflow(addr, overflow) => {
+                extra_cycles += overflow as u32;
+                addr
+            }
             _ => return Err(CpuError::InvalidAddressingMode($address_mode)),
         };
         $bus.write(addr, $register)?;
-        return Ok(0);
+        return Ok(extra_cycles);
     };
 }
 
