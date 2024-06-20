@@ -573,8 +573,6 @@ impl<T: Bus> MOS6502<T> {
                 let offset = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                let current_page = self.program_counter >> 8;
-
                 let offset = (offset as i8) as i16;
                 let new_program_counter = self.program_counter.wrapping_add_signed(offset);
 

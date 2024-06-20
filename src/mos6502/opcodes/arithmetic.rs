@@ -41,7 +41,7 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        Ok(self.add_to_accumulator_with_carry(value)?)
+        self.add_to_accumulator_with_carry(value)
     }
 
     // subtract from accumulator with carry
@@ -55,6 +55,6 @@ impl<T: Bus> MOS6502<T> {
             OpcodeOperand::Address(addr) => bus.read(addr)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        Ok(self.add_to_accumulator_with_carry(!value)?)
+        self.add_to_accumulator_with_carry(!value)
     }
 }
