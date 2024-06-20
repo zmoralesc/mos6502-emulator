@@ -27,7 +27,7 @@ impl<T: Bus> MOS6502<T> {
         self.flag_set(CpuFlags::Carry, carry);
         self.flag_set(CpuFlags::Overflow, overflow);
 
-        Ok(1)
+        Ok(0)
     }
 
     // add to accumulator with carry
