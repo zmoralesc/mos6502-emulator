@@ -6,8 +6,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        match operand {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 self.flag_set(CpuFlags::Carry, self.accumulator & NEGATIVE_BIT_MASK != 0);
                 self.accumulator = self.accumulator.wrapping_shl(1);
@@ -27,7 +26,7 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        Ok(cycles + 1)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn lsr(
@@ -35,8 +34,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        match operand {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 != 0;
                 self.accumulator = self.accumulator.wrapping_shr(1);
@@ -54,7 +52,7 @@ impl<T: Bus> MOS6502<T> {
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.flag_set(CpuFlags::Negative, false);
-        Ok(cycles)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn rol(
@@ -63,8 +61,7 @@ impl<T: Bus> MOS6502<T> {
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
         let carry_bit_mask = self.flag_check(CpuFlags::Carry) as u8;
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        match operand {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit7_is_set = self.accumulator & NEGATIVE_BIT_MASK != 0;
                 self.accumulator = self.accumulator.wrapping_shl(1) | carry_bit_mask;
@@ -86,7 +83,7 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         }
-        Ok(cycles)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn ror(
@@ -95,8 +92,7 @@ impl<T: Bus> MOS6502<T> {
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
         let carry_bit_mask = (self.flag_check(CpuFlags::Carry) as u8) << 7;
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        match operand {
+        match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(_) => {
                 let bit0_is_set = self.accumulator & 1 == 1;
                 self.accumulator = self.accumulator.wrapping_shr(1) | carry_bit_mask;
@@ -118,6 +114,6 @@ impl<T: Bus> MOS6502<T> {
             }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         }
-        Ok(cycles)
+        Ok(0)
     }
 }

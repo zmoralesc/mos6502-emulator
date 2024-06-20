@@ -6,13 +6,12 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let new_pc_value = match operand {
+        let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.set_program_counter(new_pc_value);
-        Ok(cycles + 1)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn jsr(
@@ -27,13 +26,12 @@ impl<T: Bus> MOS6502<T> {
         self.push_to_stack(bus, return_address_hi)?;
         self.push_to_stack(bus, return_address_lo)?;
 
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let new_pc_value = match operand {
+        let new_pc_value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
         self.set_program_counter(new_pc_value);
-        Ok(cycles + 6)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn rts(

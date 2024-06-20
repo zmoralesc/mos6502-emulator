@@ -6,8 +6,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -19,7 +18,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bcs(
@@ -27,8 +26,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -39,7 +37,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn beq(
@@ -47,8 +45,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -59,7 +56,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bmi(
@@ -67,8 +64,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -79,7 +75,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bne(
@@ -87,8 +83,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -99,7 +94,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bpl(
@@ -107,8 +102,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -119,7 +113,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bvc(
@@ -127,8 +121,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -139,7 +132,7 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 
     pub(in crate::mos6502) fn bvs(
@@ -147,8 +140,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let addr = match operand {
+        let addr = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Address(w) => w,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
@@ -159,6 +151,6 @@ impl<T: Bus> MOS6502<T> {
             let new_page = self.program_counter & 0xFF00;
             page_changed = current_page != new_page;
         }
-        Ok(cycles + 1 + page_changed as u32)
+        Ok(1 + page_changed as u32)
     }
 }

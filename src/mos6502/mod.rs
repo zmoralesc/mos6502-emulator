@@ -48,9 +48,8 @@ enum InterruptKind {
     Brk,
 }
 
-type OperandResult = Result<(u32, OpcodeOperand), CpuError>;
 type OpcodeFunction<T> = fn(&mut MOS6502<T>, &mut T, AddressingMode) -> Result<u32, CpuError>;
-struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode); 256]);
+struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode, u32); 256]);
 
 enum OpcodeOperand {
     Byte(u8),
@@ -90,262 +89,262 @@ pub struct MOS6502<T: Bus> {
 impl<T: Bus> Default for OpcodeFunctionArray<T> {
     fn default() -> Self {
         OpcodeFunctionArray([
-            (MOS6502::brk, AddressingMode::Implied),             // 00
-            (MOS6502::ora, AddressingMode::XIndexIndirect),      // 01
-            (MOS6502::not_implemented, AddressingMode::Implied), // 02
-            (MOS6502::not_implemented, AddressingMode::Implied), // 03
-            (MOS6502::not_implemented, AddressingMode::Implied), // 04
-            (MOS6502::ora, AddressingMode::Zeropage),            // 05
-            (MOS6502::asl, AddressingMode::Zeropage),            // 06
-            (MOS6502::not_implemented, AddressingMode::Implied), // 07
-            (MOS6502::php, AddressingMode::Implied),             // 08
-            (MOS6502::ora, AddressingMode::Immediate),           // 09
-            (MOS6502::asl, AddressingMode::Accumulator),         // 0A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 0B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 0C
-            (MOS6502::ora, AddressingMode::Absolute),            // 0D
-            (MOS6502::asl, AddressingMode::Absolute),            // 0E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 0F
-            (MOS6502::bpl, AddressingMode::Relative),            // 10
-            (MOS6502::ora, AddressingMode::IndirectYIndex),      // 11
-            (MOS6502::not_implemented, AddressingMode::Implied), // 12
-            (MOS6502::not_implemented, AddressingMode::Implied), // 13
-            (MOS6502::not_implemented, AddressingMode::Implied), // 14
-            (MOS6502::ora, AddressingMode::ZeropageXIndex),      // 15
-            (MOS6502::asl, AddressingMode::ZeropageXIndex),      // 16
-            (MOS6502::not_implemented, AddressingMode::Implied), // 17
-            (MOS6502::clc, AddressingMode::Implied),             // 18
-            (MOS6502::ora, AddressingMode::AbsoluteYIndex),      // 19
-            (MOS6502::not_implemented, AddressingMode::Implied), // 1A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 1B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 1C
-            (MOS6502::ora, AddressingMode::AbsoluteXIndex),      // 1D
-            (MOS6502::asl, AddressingMode::AbsoluteXIndex),      // 1E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 1F
-            (MOS6502::jsr, AddressingMode::Absolute),            // 20
-            (MOS6502::and, AddressingMode::XIndexIndirect),      // 21
-            (MOS6502::not_implemented, AddressingMode::Implied), // 22
-            (MOS6502::not_implemented, AddressingMode::Implied), // 23
-            (MOS6502::bit, AddressingMode::Zeropage),            // 24
-            (MOS6502::and, AddressingMode::Zeropage),            // 25
-            (MOS6502::rol, AddressingMode::Zeropage),            // 26
-            (MOS6502::not_implemented, AddressingMode::Implied), // 27
-            (MOS6502::plp, AddressingMode::Implied),             // 28
-            (MOS6502::and, AddressingMode::Immediate),           // 29
-            (MOS6502::rol, AddressingMode::Accumulator),         // 2A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 2B
-            (MOS6502::bit, AddressingMode::Absolute),            // 2C
-            (MOS6502::and, AddressingMode::Absolute),            // 2D
-            (MOS6502::rol, AddressingMode::Absolute),            // 2E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 2F
-            (MOS6502::bmi, AddressingMode::Relative),            // 30
-            (MOS6502::and, AddressingMode::IndirectYIndex),      // 31
-            (MOS6502::not_implemented, AddressingMode::Implied), // 32
-            (MOS6502::not_implemented, AddressingMode::Implied), // 33
-            (MOS6502::not_implemented, AddressingMode::Implied), // 34
-            (MOS6502::and, AddressingMode::ZeropageXIndex),      // 35
-            (MOS6502::rol, AddressingMode::ZeropageXIndex),      // 36
-            (MOS6502::not_implemented, AddressingMode::Implied), // 37
-            (MOS6502::sec, AddressingMode::Implied),             // 38
-            (MOS6502::and, AddressingMode::AbsoluteYIndex),      // 39
-            (MOS6502::not_implemented, AddressingMode::Implied), // 3A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 3B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 3C
-            (MOS6502::and, AddressingMode::AbsoluteXIndex),      // 3D
-            (MOS6502::rol, AddressingMode::AbsoluteXIndex),      // 3E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 3F
-            (MOS6502::rti, AddressingMode::Implied),             // 40
-            (MOS6502::eor, AddressingMode::XIndexIndirect),      // 41
-            (MOS6502::not_implemented, AddressingMode::Implied), // 42
-            (MOS6502::not_implemented, AddressingMode::Implied), // 43
-            (MOS6502::not_implemented, AddressingMode::Implied), // 44
-            (MOS6502::eor, AddressingMode::Zeropage),            // 45
-            (MOS6502::lsr, AddressingMode::Zeropage),            // 46
-            (MOS6502::not_implemented, AddressingMode::Implied), // 47
-            (MOS6502::pha, AddressingMode::Implied),             // 48
-            (MOS6502::eor, AddressingMode::Immediate),           // 49
-            (MOS6502::lsr, AddressingMode::Accumulator),         // 4A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 4B
-            (MOS6502::jmp, AddressingMode::Absolute),            // 4C
-            (MOS6502::eor, AddressingMode::Absolute),            // 4D
-            (MOS6502::lsr, AddressingMode::Absolute),            // 4E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 4F
-            (MOS6502::bvc, AddressingMode::Relative),            // 50
-            (MOS6502::eor, AddressingMode::IndirectYIndex),      // 51
-            (MOS6502::not_implemented, AddressingMode::Implied), // 52
-            (MOS6502::not_implemented, AddressingMode::Implied), // 53
-            (MOS6502::not_implemented, AddressingMode::Implied), // 54
-            (MOS6502::eor, AddressingMode::ZeropageXIndex),      // 55
-            (MOS6502::lsr, AddressingMode::ZeropageXIndex),      // 56
-            (MOS6502::not_implemented, AddressingMode::Implied), // 57
-            (MOS6502::cli, AddressingMode::Implied),             // 58
-            (MOS6502::eor, AddressingMode::AbsoluteYIndex),      // 59
-            (MOS6502::not_implemented, AddressingMode::Implied), // 5A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 5B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 5C
-            (MOS6502::eor, AddressingMode::AbsoluteXIndex),      // 5D
-            (MOS6502::lsr, AddressingMode::AbsoluteXIndex),      // 5E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 5F
-            (MOS6502::rts, AddressingMode::Implied),             // 60
-            (MOS6502::adc, AddressingMode::XIndexIndirect),      // 61
-            (MOS6502::not_implemented, AddressingMode::Implied), // 62
-            (MOS6502::not_implemented, AddressingMode::Implied), // 63
-            (MOS6502::not_implemented, AddressingMode::Implied), // 64
-            (MOS6502::adc, AddressingMode::Zeropage),            // 65
-            (MOS6502::ror, AddressingMode::Zeropage),            // 66
-            (MOS6502::not_implemented, AddressingMode::Implied), // 67
-            (MOS6502::pla, AddressingMode::Implied),             // 68
-            (MOS6502::adc, AddressingMode::Immediate),           // 69
-            (MOS6502::ror, AddressingMode::Accumulator),         // 6A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 6B
-            (MOS6502::jmp, AddressingMode::Indirect),            // 6C
-            (MOS6502::adc, AddressingMode::Absolute),            // 6D
-            (MOS6502::ror, AddressingMode::Absolute),            // 6E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 6F
-            (MOS6502::bvs, AddressingMode::Relative),            // 70
-            (MOS6502::adc, AddressingMode::IndirectYIndex),      // 71
-            (MOS6502::not_implemented, AddressingMode::Implied), // 72
-            (MOS6502::not_implemented, AddressingMode::Implied), // 73
-            (MOS6502::not_implemented, AddressingMode::Implied), // 74
-            (MOS6502::adc, AddressingMode::ZeropageXIndex),      // 75
-            (MOS6502::ror, AddressingMode::ZeropageXIndex),      // 76
-            (MOS6502::not_implemented, AddressingMode::Implied), // 77
-            (MOS6502::sei, AddressingMode::Implied),             // 78
-            (MOS6502::adc, AddressingMode::AbsoluteYIndex),      // 79
-            (MOS6502::not_implemented, AddressingMode::Implied), // 7A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 7B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 7C
-            (MOS6502::adc, AddressingMode::AbsoluteXIndex),      // 7D
-            (MOS6502::ror, AddressingMode::AbsoluteXIndex),      // 7E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 7F
-            (MOS6502::not_implemented, AddressingMode::Implied), // 80
-            (MOS6502::sta, AddressingMode::XIndexIndirect),      // 81
-            (MOS6502::not_implemented, AddressingMode::Implied), // 82
-            (MOS6502::not_implemented, AddressingMode::Implied), // 83
-            (MOS6502::sty, AddressingMode::Zeropage),            // 84
-            (MOS6502::sta, AddressingMode::Zeropage),            // 85
-            (MOS6502::stx, AddressingMode::Zeropage),            // 86
-            (MOS6502::not_implemented, AddressingMode::Implied), // 87
-            (MOS6502::dey, AddressingMode::Implied),             // 88
-            (MOS6502::not_implemented, AddressingMode::Implied), // 89
-            (MOS6502::txa, AddressingMode::Implied),             // 8A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 8B
-            (MOS6502::sty, AddressingMode::Absolute),            // 8C
-            (MOS6502::sta, AddressingMode::Absolute),            // 8D
-            (MOS6502::stx, AddressingMode::Absolute),            // 8E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 8F
-            (MOS6502::bcc, AddressingMode::Relative),            // 90
-            (MOS6502::sta, AddressingMode::IndirectYIndex),      // 91
-            (MOS6502::not_implemented, AddressingMode::Implied), // 92
-            (MOS6502::not_implemented, AddressingMode::Implied), // 93
-            (MOS6502::sty, AddressingMode::ZeropageXIndex),      // 94
-            (MOS6502::sta, AddressingMode::ZeropageXIndex),      // 95
-            (MOS6502::stx, AddressingMode::ZeropageYIndex),      // 96
-            (MOS6502::not_implemented, AddressingMode::Implied), // 97
-            (MOS6502::tya, AddressingMode::Implied),             // 98
-            (MOS6502::sta, AddressingMode::AbsoluteYIndex),      // 99
-            (MOS6502::txs, AddressingMode::Implied),             // 9A
-            (MOS6502::not_implemented, AddressingMode::Implied), // 9B
-            (MOS6502::not_implemented, AddressingMode::Implied), // 9C
-            (MOS6502::sta, AddressingMode::AbsoluteXIndex),      // 9D
-            (MOS6502::not_implemented, AddressingMode::Implied), // 9E
-            (MOS6502::not_implemented, AddressingMode::Implied), // 9F
-            (MOS6502::ldy, AddressingMode::Immediate),           // A0
-            (MOS6502::lda, AddressingMode::XIndexIndirect),      // A1
-            (MOS6502::ldx, AddressingMode::Immediate),           // A2
-            (MOS6502::not_implemented, AddressingMode::Implied), // A3
-            (MOS6502::ldy, AddressingMode::Zeropage),            // A4
-            (MOS6502::lda, AddressingMode::Zeropage),            // A5
-            (MOS6502::ldx, AddressingMode::Zeropage),            // A6
-            (MOS6502::not_implemented, AddressingMode::Implied), // A7
-            (MOS6502::tay, AddressingMode::Implied),             // A8
-            (MOS6502::lda, AddressingMode::Immediate),           // A9
-            (MOS6502::tax, AddressingMode::Implied),             // AA
-            (MOS6502::not_implemented, AddressingMode::Implied), // AB
-            (MOS6502::ldy, AddressingMode::Absolute),            // AC
-            (MOS6502::lda, AddressingMode::Absolute),            // AD
-            (MOS6502::ldx, AddressingMode::Absolute),            // AE
-            (MOS6502::not_implemented, AddressingMode::Implied), // AF
-            (MOS6502::bcs, AddressingMode::Relative),            // B0
-            (MOS6502::lda, AddressingMode::IndirectYIndex),      // B1
-            (MOS6502::not_implemented, AddressingMode::Implied), // B2
-            (MOS6502::not_implemented, AddressingMode::Implied), // B3
-            (MOS6502::ldy, AddressingMode::ZeropageXIndex),      // B4
-            (MOS6502::lda, AddressingMode::ZeropageXIndex),      // B5
-            (MOS6502::ldx, AddressingMode::ZeropageYIndex),      // B6
-            (MOS6502::not_implemented, AddressingMode::Implied), // B7
-            (MOS6502::clv, AddressingMode::Implied),             // B8
-            (MOS6502::lda, AddressingMode::AbsoluteYIndex),      // B9
-            (MOS6502::tsx, AddressingMode::Implied),             // BA
-            (MOS6502::not_implemented, AddressingMode::Implied), // BB
-            (MOS6502::ldy, AddressingMode::AbsoluteXIndex),      // BC
-            (MOS6502::lda, AddressingMode::AbsoluteXIndex),      // BD
-            (MOS6502::ldx, AddressingMode::AbsoluteYIndex),      // BE
-            (MOS6502::not_implemented, AddressingMode::Implied), // BF
-            (MOS6502::cpy, AddressingMode::Immediate),           // C0
-            (MOS6502::cmp, AddressingMode::XIndexIndirect),      // C1
-            (MOS6502::not_implemented, AddressingMode::Implied), // C2
-            (MOS6502::not_implemented, AddressingMode::Implied), // C3
-            (MOS6502::cpy, AddressingMode::Zeropage),            // C4
-            (MOS6502::cmp, AddressingMode::Zeropage),            // C5
-            (MOS6502::dec, AddressingMode::Zeropage),            // C6
-            (MOS6502::not_implemented, AddressingMode::Implied), // C7
-            (MOS6502::iny, AddressingMode::Implied),             // C8
-            (MOS6502::cmp, AddressingMode::Immediate),           // C9
-            (MOS6502::dex, AddressingMode::Implied),             // CA
-            (MOS6502::not_implemented, AddressingMode::Implied), // CB
-            (MOS6502::cpy, AddressingMode::Absolute),            // CC
-            (MOS6502::cmp, AddressingMode::Absolute),            // CD
-            (MOS6502::dec, AddressingMode::Absolute),            // CE
-            (MOS6502::not_implemented, AddressingMode::Implied), // CF
-            (MOS6502::bne, AddressingMode::Relative),            // D0
-            (MOS6502::cmp, AddressingMode::IndirectYIndex),      // D1
-            (MOS6502::not_implemented, AddressingMode::Implied), // D2
-            (MOS6502::not_implemented, AddressingMode::Implied), // D3
-            (MOS6502::not_implemented, AddressingMode::Implied), // D4
-            (MOS6502::cmp, AddressingMode::ZeropageXIndex),      // D5
-            (MOS6502::dec, AddressingMode::ZeropageXIndex),      // D6
-            (MOS6502::not_implemented, AddressingMode::Implied), // D7
-            (MOS6502::cld, AddressingMode::Implied),             // D8
-            (MOS6502::cmp, AddressingMode::AbsoluteYIndex),      // D9
-            (MOS6502::not_implemented, AddressingMode::Implied), // DA
-            (MOS6502::not_implemented, AddressingMode::Implied), // DB
-            (MOS6502::not_implemented, AddressingMode::Implied), // DC
-            (MOS6502::cmp, AddressingMode::AbsoluteXIndex),      // DD
-            (MOS6502::dec, AddressingMode::AbsoluteXIndex),      // DE
-            (MOS6502::not_implemented, AddressingMode::Implied), // DF
-            (MOS6502::cpx, AddressingMode::Immediate),           // E0
-            (MOS6502::sbc, AddressingMode::XIndexIndirect),      // E1
-            (MOS6502::not_implemented, AddressingMode::Implied), // E2
-            (MOS6502::not_implemented, AddressingMode::Implied), // E3
-            (MOS6502::cpx, AddressingMode::Zeropage),            // E4
-            (MOS6502::sbc, AddressingMode::Zeropage),            // E5
-            (MOS6502::inc, AddressingMode::Zeropage),            // E6
-            (MOS6502::not_implemented, AddressingMode::Implied), // E7
-            (MOS6502::inx, AddressingMode::Implied),             // E8
-            (MOS6502::sbc, AddressingMode::Immediate),           // E9
-            (MOS6502::nop, AddressingMode::Implied),             // EA
-            (MOS6502::not_implemented, AddressingMode::Implied), // EB
-            (MOS6502::cpx, AddressingMode::Absolute),            // EC
-            (MOS6502::sbc, AddressingMode::Absolute),            // ED
-            (MOS6502::inc, AddressingMode::Absolute),            // EE
-            (MOS6502::not_implemented, AddressingMode::Implied), // EF
-            (MOS6502::beq, AddressingMode::Relative),            // F0
-            (MOS6502::sbc, AddressingMode::IndirectYIndex),      // F1
-            (MOS6502::not_implemented, AddressingMode::Implied), // F2
-            (MOS6502::not_implemented, AddressingMode::Implied), // F3
-            (MOS6502::not_implemented, AddressingMode::Implied), // F4
-            (MOS6502::sbc, AddressingMode::ZeropageXIndex),      // F5
-            (MOS6502::inc, AddressingMode::ZeropageXIndex),      // F6
-            (MOS6502::not_implemented, AddressingMode::Implied), // F7
-            (MOS6502::sed, AddressingMode::Implied),             // F8
-            (MOS6502::sbc, AddressingMode::AbsoluteYIndex),      // F9
-            (MOS6502::not_implemented, AddressingMode::Implied), // FA
-            (MOS6502::not_implemented, AddressingMode::Implied), // FB
-            (MOS6502::not_implemented, AddressingMode::Implied), // FC
-            (MOS6502::sbc, AddressingMode::AbsoluteXIndex),      // FD
-            (MOS6502::inc, AddressingMode::AbsoluteXIndex),      // FE
-            (MOS6502::not_implemented, AddressingMode::Implied), // FF
+            (MOS6502::brk, AddressingMode::Implied, 7),        // 00
+            (MOS6502::ora, AddressingMode::XIndexIndirect, 6), // 01
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 02
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 03
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 04
+            (MOS6502::ora, AddressingMode::Zeropage, 3),       // 05
+            (MOS6502::asl, AddressingMode::Zeropage, 5),       // 06
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 07
+            (MOS6502::php, AddressingMode::Implied, 3),        // 08
+            (MOS6502::ora, AddressingMode::Immediate, 2),      // 09
+            (MOS6502::asl, AddressingMode::Accumulator, 2),    // 0A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 0B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 0C
+            (MOS6502::ora, AddressingMode::Absolute, 4),       // 0D
+            (MOS6502::asl, AddressingMode::Absolute, 6),       // 0E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 0F
+            (MOS6502::bpl, AddressingMode::Relative, 2),       // 10
+            (MOS6502::ora, AddressingMode::IndirectYIndex, 5), // 11
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 12
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 13
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 14
+            (MOS6502::ora, AddressingMode::ZeropageXIndex, 4), // 15
+            (MOS6502::asl, AddressingMode::ZeropageXIndex, 6), // 16
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 17
+            (MOS6502::clc, AddressingMode::Implied, 2),        // 18
+            (MOS6502::ora, AddressingMode::AbsoluteYIndex, 4), // 19
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 1A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 1B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 1C
+            (MOS6502::ora, AddressingMode::AbsoluteXIndex, 4), // 1D
+            (MOS6502::asl, AddressingMode::AbsoluteXIndex, 7), // 1E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 1F
+            (MOS6502::jsr, AddressingMode::Absolute, 6),       // 20
+            (MOS6502::and, AddressingMode::XIndexIndirect, 6), // 21
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 22
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 23
+            (MOS6502::bit, AddressingMode::Zeropage, 3),       // 24
+            (MOS6502::and, AddressingMode::Zeropage, 3),       // 25
+            (MOS6502::rol, AddressingMode::Zeropage, 5),       // 26
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 27
+            (MOS6502::plp, AddressingMode::Implied, 4),        // 28
+            (MOS6502::and, AddressingMode::Immediate, 2),      // 29
+            (MOS6502::rol, AddressingMode::Accumulator, 2),    // 2A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 2B
+            (MOS6502::bit, AddressingMode::Absolute, 4),       // 2C
+            (MOS6502::and, AddressingMode::Absolute, 4),       // 2D
+            (MOS6502::rol, AddressingMode::Absolute, 6),       // 2E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 2F
+            (MOS6502::bmi, AddressingMode::Relative, 2),       // 30
+            (MOS6502::and, AddressingMode::IndirectYIndex, 5), // 31
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 32
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 33
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 34
+            (MOS6502::and, AddressingMode::ZeropageXIndex, 4), // 35
+            (MOS6502::rol, AddressingMode::ZeropageXIndex, 6), // 36
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 37
+            (MOS6502::sec, AddressingMode::Implied, 2),        // 38
+            (MOS6502::and, AddressingMode::AbsoluteYIndex, 4), // 39
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 3A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 3B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 3C
+            (MOS6502::and, AddressingMode::AbsoluteXIndex, 4), // 3D
+            (MOS6502::rol, AddressingMode::AbsoluteXIndex, 7), // 3E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 3F
+            (MOS6502::rti, AddressingMode::Implied, 6),        // 40
+            (MOS6502::eor, AddressingMode::XIndexIndirect, 6), // 41
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 42
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 43
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 44
+            (MOS6502::eor, AddressingMode::Zeropage, 3),       // 45
+            (MOS6502::lsr, AddressingMode::Zeropage, 5),       // 46
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 47
+            (MOS6502::pha, AddressingMode::Implied, 3),        // 48
+            (MOS6502::eor, AddressingMode::Immediate, 2),      // 49
+            (MOS6502::lsr, AddressingMode::Accumulator, 2),    // 4A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 4B
+            (MOS6502::jmp, AddressingMode::Absolute, 3),       // 4C
+            (MOS6502::eor, AddressingMode::Absolute, 4),       // 4D
+            (MOS6502::lsr, AddressingMode::Absolute, 6),       // 4E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 4F
+            (MOS6502::bvc, AddressingMode::Relative, 2),       // 50
+            (MOS6502::eor, AddressingMode::IndirectYIndex, 5), // 51
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 52
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 53
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 54
+            (MOS6502::eor, AddressingMode::ZeropageXIndex, 4), // 55
+            (MOS6502::lsr, AddressingMode::ZeropageXIndex, 6), // 56
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 57
+            (MOS6502::cli, AddressingMode::Implied, 2),        // 58
+            (MOS6502::eor, AddressingMode::AbsoluteYIndex, 4), // 59
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 5A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 5B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 5C
+            (MOS6502::eor, AddressingMode::AbsoluteXIndex, 4), // 5D
+            (MOS6502::lsr, AddressingMode::AbsoluteXIndex, 7), // 5E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 5F
+            (MOS6502::rts, AddressingMode::Implied, 6),        // 60
+            (MOS6502::adc, AddressingMode::XIndexIndirect, 6), // 61
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 62
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 63
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 64
+            (MOS6502::adc, AddressingMode::Zeropage, 3),       // 65
+            (MOS6502::ror, AddressingMode::Zeropage, 5),       // 66
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 67
+            (MOS6502::pla, AddressingMode::Implied, 4),        // 68
+            (MOS6502::adc, AddressingMode::Immediate, 2),      // 69
+            (MOS6502::ror, AddressingMode::Accumulator, 2),    // 6A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 6B
+            (MOS6502::jmp, AddressingMode::Indirect, 5),       // 6C
+            (MOS6502::adc, AddressingMode::Absolute, 4),       // 6D
+            (MOS6502::ror, AddressingMode::Absolute, 6),       // 6E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 6F
+            (MOS6502::bvs, AddressingMode::Relative, 2),       // 70
+            (MOS6502::adc, AddressingMode::IndirectYIndex, 5), // 71
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 72
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 73
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 74
+            (MOS6502::adc, AddressingMode::ZeropageXIndex, 4), // 75
+            (MOS6502::ror, AddressingMode::ZeropageXIndex, 6), // 76
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 77
+            (MOS6502::sei, AddressingMode::Implied, 2),        // 78
+            (MOS6502::adc, AddressingMode::AbsoluteYIndex, 4), // 79
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 7A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 7B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 7C
+            (MOS6502::adc, AddressingMode::AbsoluteXIndex, 4), // 7D
+            (MOS6502::ror, AddressingMode::AbsoluteXIndex, 7), // 7E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 7F
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 80
+            (MOS6502::sta, AddressingMode::XIndexIndirect, 6), // 81
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 82
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 83
+            (MOS6502::sty, AddressingMode::Zeropage, 3),       // 84
+            (MOS6502::sta, AddressingMode::Zeropage, 3),       // 85
+            (MOS6502::stx, AddressingMode::Zeropage, 3),       // 86
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 87
+            (MOS6502::dey, AddressingMode::Implied, 2),        // 88
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 89
+            (MOS6502::txa, AddressingMode::Implied, 2),        // 8A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 8B
+            (MOS6502::sty, AddressingMode::Absolute, 4),       // 8C
+            (MOS6502::sta, AddressingMode::Absolute, 4),       // 8D
+            (MOS6502::stx, AddressingMode::Absolute, 4),       // 8E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 8F
+            (MOS6502::bcc, AddressingMode::Relative, 2),       // 90
+            (MOS6502::sta, AddressingMode::IndirectYIndex, 6), // 91
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 92
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 93
+            (MOS6502::sty, AddressingMode::ZeropageXIndex, 4), // 94
+            (MOS6502::sta, AddressingMode::ZeropageXIndex, 4), // 95
+            (MOS6502::stx, AddressingMode::ZeropageYIndex, 4), // 96
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 97
+            (MOS6502::tya, AddressingMode::Implied, 2),        // 98
+            (MOS6502::sta, AddressingMode::AbsoluteYIndex, 5), // 99
+            (MOS6502::txs, AddressingMode::Implied, 2),        // 9A
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 9B
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 9C
+            (MOS6502::sta, AddressingMode::AbsoluteXIndex, 5), // 9D
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 9E
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // 9F
+            (MOS6502::ldy, AddressingMode::Immediate, 2),      // A0
+            (MOS6502::lda, AddressingMode::XIndexIndirect, 6), // A1
+            (MOS6502::ldx, AddressingMode::Immediate, 2),      // A2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // A3
+            (MOS6502::ldy, AddressingMode::Zeropage, 3),       // A4
+            (MOS6502::lda, AddressingMode::Zeropage, 3),       // A5
+            (MOS6502::ldx, AddressingMode::Zeropage, 3),       // A6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // A7
+            (MOS6502::tay, AddressingMode::Implied, 2),        // A8
+            (MOS6502::lda, AddressingMode::Immediate, 2),      // A9
+            (MOS6502::tax, AddressingMode::Implied, 2),        // AA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // AB
+            (MOS6502::ldy, AddressingMode::Absolute, 4),       // AC
+            (MOS6502::lda, AddressingMode::Absolute, 4),       // AD
+            (MOS6502::ldx, AddressingMode::Absolute, 4),       // AE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // AF
+            (MOS6502::bcs, AddressingMode::Relative, 2),       // B0
+            (MOS6502::lda, AddressingMode::IndirectYIndex, 5), // B1
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // B2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // B3
+            (MOS6502::ldy, AddressingMode::ZeropageXIndex, 4), // B4
+            (MOS6502::lda, AddressingMode::ZeropageXIndex, 4), // B5
+            (MOS6502::ldx, AddressingMode::ZeropageYIndex, 4), // B6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // B7
+            (MOS6502::clv, AddressingMode::Implied, 2),        // B8
+            (MOS6502::lda, AddressingMode::AbsoluteYIndex, 4), // B9
+            (MOS6502::tsx, AddressingMode::Implied, 2),        // BA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // BB
+            (MOS6502::ldy, AddressingMode::AbsoluteXIndex, 4), // BC
+            (MOS6502::lda, AddressingMode::AbsoluteXIndex, 4), // BD
+            (MOS6502::ldx, AddressingMode::AbsoluteYIndex, 4), // BE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // BF
+            (MOS6502::cpy, AddressingMode::Immediate, 2),      // C0
+            (MOS6502::cmp, AddressingMode::XIndexIndirect, 6), // C1
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // C2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // C3
+            (MOS6502::cpy, AddressingMode::Zeropage, 3),       // C4
+            (MOS6502::cmp, AddressingMode::Zeropage, 3),       // C5
+            (MOS6502::dec, AddressingMode::Zeropage, 5),       // C6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // C7
+            (MOS6502::iny, AddressingMode::Implied, 2),        // C8
+            (MOS6502::cmp, AddressingMode::Immediate, 2),      // C9
+            (MOS6502::dex, AddressingMode::Implied, 2),        // CA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // CB
+            (MOS6502::cpy, AddressingMode::Absolute, 4),       // CC
+            (MOS6502::cmp, AddressingMode::Absolute, 4),       // CD
+            (MOS6502::dec, AddressingMode::Absolute, 6),       // CE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // CF
+            (MOS6502::bne, AddressingMode::Relative, 2),       // D0
+            (MOS6502::cmp, AddressingMode::IndirectYIndex, 5), // D1
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // D2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // D3
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // D4
+            (MOS6502::cmp, AddressingMode::ZeropageXIndex, 4), // D5
+            (MOS6502::dec, AddressingMode::ZeropageXIndex, 6), // D6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // D7
+            (MOS6502::cld, AddressingMode::Implied, 2),        // D8
+            (MOS6502::cmp, AddressingMode::AbsoluteYIndex, 4), // D9
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // DA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // DB
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // DC
+            (MOS6502::cmp, AddressingMode::AbsoluteXIndex, 4), // DD
+            (MOS6502::dec, AddressingMode::AbsoluteXIndex, 7), // DE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // DF
+            (MOS6502::cpx, AddressingMode::Immediate, 2),      // E0
+            (MOS6502::sbc, AddressingMode::XIndexIndirect, 6), // E1
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // E2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // E3
+            (MOS6502::cpx, AddressingMode::Zeropage, 3),       // E4
+            (MOS6502::sbc, AddressingMode::Zeropage, 3),       // E5
+            (MOS6502::inc, AddressingMode::Zeropage, 5),       // E6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // E7
+            (MOS6502::inx, AddressingMode::Implied, 2),        // E8
+            (MOS6502::sbc, AddressingMode::Immediate, 2),      // E9
+            (MOS6502::nop, AddressingMode::Implied, 2),        // EA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // EB
+            (MOS6502::cpx, AddressingMode::Absolute, 4),       // EC
+            (MOS6502::sbc, AddressingMode::Absolute, 4),       // ED
+            (MOS6502::inc, AddressingMode::Absolute, 6),       // EE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // EF
+            (MOS6502::beq, AddressingMode::Relative, 2),       // F0
+            (MOS6502::sbc, AddressingMode::IndirectYIndex, 5), // F1
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // F2
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // F3
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // F4
+            (MOS6502::sbc, AddressingMode::ZeropageXIndex, 4), // F5
+            (MOS6502::inc, AddressingMode::ZeropageXIndex, 6), // F6
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // F7
+            (MOS6502::sed, AddressingMode::Implied, 2),        // F8
+            (MOS6502::sbc, AddressingMode::AbsoluteYIndex, 4), // F9
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // FA
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // FB
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // FC
+            (MOS6502::sbc, AddressingMode::AbsoluteXIndex, 4), // FD
+            (MOS6502::inc, AddressingMode::AbsoluteXIndex, 7), // FE
+            (MOS6502::not_implemented, AddressingMode::Implied, 0), // FF
         ])
     }
 }
@@ -460,8 +459,8 @@ impl<T: Bus> MOS6502<T> {
     pub fn step(&mut self, bus: &mut T) -> Result<u32, CpuError> {
         let opcode = bus.read(self.program_counter)? as usize;
         self.increment_program_counter(1);
-        let (ref opcode_func, address_mode) = self.opcode_array.0[opcode];
-        opcode_func(self, bus, address_mode)
+        let (ref opcode_func, address_mode, base_cycles) = self.opcode_array.0[opcode];
+        Ok(opcode_func(self, bus, address_mode)? + base_cycles)
     }
 
     /// Check if specified flag is set
@@ -483,9 +482,13 @@ impl<T: Bus> MOS6502<T> {
 
     /// Given some addressing mode, returns operand and increases CPU cycles as appropriate
     #[inline]
-    fn resolve_operand(&mut self, bus: &mut T, address_mode: AddressingMode) -> OperandResult {
+    fn resolve_operand(
+        &mut self,
+        bus: &mut T,
+        address_mode: AddressingMode,
+    ) -> Result<OpcodeOperand, CpuError> {
         match address_mode {
-            AddressingMode::Accumulator => Ok((1, OpcodeOperand::Byte(self.accumulator))),
+            AddressingMode::Accumulator => Ok(OpcodeOperand::Byte(self.accumulator)),
             AddressingMode::Absolute => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
@@ -494,7 +497,7 @@ impl<T: Bus> MOS6502<T> {
 
                 let address = u16::from_le_bytes([low_byte, high_byte]);
 
-                Ok((3, OpcodeOperand::Address(address)))
+                Ok(OpcodeOperand::Address(address))
             }
             AddressingMode::AbsoluteXIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
@@ -506,7 +509,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok((3 + overflow as u32, OpcodeOperand::Address(address)))
+                Ok(OpcodeOperand::Address(address))
             }
             AddressingMode::AbsoluteYIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
@@ -517,17 +520,16 @@ impl<T: Bus> MOS6502<T> {
                 let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
-                let cycles = 3 + overflow as u32;
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok((cycles, OpcodeOperand::Address(address)))
+                Ok(OpcodeOperand::Address(address))
             }
             AddressingMode::Immediate => {
                 let byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                Ok((1, OpcodeOperand::Byte(byte)))
+                Ok(OpcodeOperand::Byte(byte))
             }
-            AddressingMode::Implied => Ok((0, OpcodeOperand::None)),
+            AddressingMode::Implied => Ok(OpcodeOperand::None),
             AddressingMode::Indirect => {
                 let mut low_byte: u8 = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
@@ -540,7 +542,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = bus.read(address.wrapping_add(1))?;
 
                 let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
-                Ok((2, operand))
+                Ok(operand)
             }
             AddressingMode::XIndexIndirect => {
                 let mut zeropage_address: u8 = bus.read(self.program_counter)?;
@@ -552,7 +554,7 @@ impl<T: Bus> MOS6502<T> {
                 let high_byte = bus.read(zeropage_address.wrapping_add(1) as u16)?;
 
                 let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
-                Ok((5, operand))
+                Ok(operand)
             }
             AddressingMode::IndirectYIndex => {
                 let zeropage_address = bus.read(self.program_counter)?;
@@ -565,7 +567,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
                 let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
-                Ok((4 + overflow as u32, operand))
+                Ok(operand)
             }
             AddressingMode::Relative => {
                 let offset = bus.read(self.program_counter)?;
@@ -576,16 +578,13 @@ impl<T: Bus> MOS6502<T> {
                 let offset = (offset as i8) as i16;
                 let new_program_counter = self.program_counter.wrapping_add_signed(offset);
 
-                let page_transition_ocurred = new_program_counter >> 8 != current_page;
-
-                let cycles = 1 + page_transition_ocurred as u32;
-                Ok((cycles, OpcodeOperand::Address(new_program_counter)))
+                Ok(OpcodeOperand::Address(new_program_counter))
             }
             AddressingMode::Zeropage => {
                 let zeropage_address = bus.read(self.program_counter)?;
                 self.increment_program_counter(1);
 
-                Ok((2, OpcodeOperand::Address(zeropage_address as u16)))
+                Ok(OpcodeOperand::Address(zeropage_address as u16))
             }
             AddressingMode::ZeropageXIndex => {
                 let offset = self.x_register;
@@ -595,7 +594,7 @@ impl<T: Bus> MOS6502<T> {
 
                 let address = zeropage_address.wrapping_add(offset);
 
-                Ok((3, OpcodeOperand::Address(address as u16)))
+                Ok(OpcodeOperand::Address(address as u16))
             }
             AddressingMode::ZeropageYIndex => {
                 let offset = self.y_register;
@@ -605,7 +604,7 @@ impl<T: Bus> MOS6502<T> {
 
                 let address = zeropage_address.wrapping_add(offset);
 
-                Ok((3, OpcodeOperand::Address(address as u16)))
+                Ok(OpcodeOperand::Address(address as u16))
             }
         }
     }

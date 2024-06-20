@@ -2,20 +2,18 @@ use crate::mos6502::*;
 
 macro_rules! store_register_value {
     ($cpu:expr, $register:expr, $address_mode:ident, $bus:expr) => {
-        let (cycles, operand) = $cpu.resolve_operand($bus, $address_mode)?;
-        let addr = match operand {
+        let addr = match $cpu.resolve_operand($bus, $address_mode)? {
             OpcodeOperand::Address(addr) => addr,
             _ => return Err(CpuError::InvalidAddressingMode($address_mode)),
         };
         $bus.write(addr, $register)?;
-        return Ok(cycles + 1);
+        return Ok(0);
     };
 }
 
 macro_rules! load_value_to_register {
     ($cpu:expr, $register:expr, $address_mode:ident, $bus:expr) => {
-        let (cycles, operand) = $cpu.resolve_operand($bus, $address_mode)?;
-        $register = match operand {
+        $register = match $cpu.resolve_operand($bus, $address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => $bus.read(addr)?,
             _ => return Err(CpuError::InvalidAddressingMode($address_mode)),
@@ -23,7 +21,7 @@ macro_rules! load_value_to_register {
 
         $cpu.flag_set(CpuFlags::Zero, $register == 0);
         $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
-        return Ok(cycles + 1);
+        return Ok(0);
     };
 }
 

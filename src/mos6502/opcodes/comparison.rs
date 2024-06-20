@@ -9,8 +9,7 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
-        let (cycles, operand) = self.resolve_operand(bus, address_mode)?;
-        let operand: u8 = match operand {
+        let operand: u8 = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
@@ -33,7 +32,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Carry, true);
             }
         }
-        Ok(cycles + 1)
+        Ok(0)
     }
 
     pub(in crate::mos6502) fn cmp(
