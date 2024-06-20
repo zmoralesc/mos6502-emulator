@@ -13,15 +13,20 @@ macro_rules! store_register_value {
 
 macro_rules! load_value_to_register {
     ($cpu:expr, $register:expr, $address_mode:ident, $bus:expr) => {
+        let mut extra_cycles = 0;
         $register = match $cpu.resolve_operand($bus, $address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => $bus.read(addr)?,
+            OpcodeOperand::AddressWithOverflow(addr, overflow) => {
+                extra_cycles += overflow as u32;
+                $bus.read(addr)?
+            }
             _ => return Err(CpuError::InvalidAddressingMode($address_mode)),
         };
 
         $cpu.flag_set(CpuFlags::Zero, $register == 0);
         $cpu.flag_set(CpuFlags::Negative, $register & NEGATIVE_BIT_MASK != 0);
-        return Ok(0);
+        return Ok(extra_cycles);
     };
 }
 

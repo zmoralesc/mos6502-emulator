@@ -36,12 +36,17 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
+        let mut extra_cycles = 0;
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
+            OpcodeOperand::AddressWithOverflow(addr, overflow) => {
+                extra_cycles += overflow as u32;
+                bus.read(addr)?
+            }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        self.add_to_accumulator_with_carry(value)
+        Ok(self.add_to_accumulator_with_carry(value)? + extra_cycles)
     }
 
     // subtract from accumulator with carry
@@ -50,11 +55,16 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
+        let mut extra_cycles = 0;
         let value = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(addr) => bus.read(addr)?,
+            OpcodeOperand::AddressWithOverflow(addr, overflow) => {
+                extra_cycles += overflow as u32;
+                bus.read(addr)?
+            }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
-        self.add_to_accumulator_with_carry(!value)
+        Ok(self.add_to_accumulator_with_carry(!value)? + extra_cycles)
     }
 }

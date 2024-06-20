@@ -9,9 +9,14 @@ impl<T: Bus> MOS6502<T> {
         bus: &mut T,
         address_mode: AddressingMode,
     ) -> Result<u32, CpuError> {
+        let mut extra_cycles = 0;
         let operand: u8 = match self.resolve_operand(bus, address_mode)? {
             OpcodeOperand::Byte(b) => b,
             OpcodeOperand::Address(w) => bus.read(w)?,
+            OpcodeOperand::AddressWithOverflow(addr, overflow) => {
+                extra_cycles += overflow as u32;
+                bus.read(addr)?
+            }
             _ => return Err(CpuError::InvalidAddressingMode(address_mode)),
         };
 
@@ -32,7 +37,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Carry, true);
             }
         }
-        Ok(0)
+        Ok(extra_cycles)
     }
 
     pub(in crate::mos6502) fn cmp(

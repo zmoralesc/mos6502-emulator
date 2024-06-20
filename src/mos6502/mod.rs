@@ -54,6 +54,7 @@ struct OpcodeFunctionArray<T: Bus>([(OpcodeFunction<T>, AddressingMode, u32); 25
 enum OpcodeOperand {
     Byte(u8),
     Address(u16),
+    AddressWithOverflow(u16, bool),
     None,
 }
 
@@ -509,7 +510,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok(OpcodeOperand::Address(address))
+                Ok(OpcodeOperand::AddressWithOverflow(address, overflow))
             }
             AddressingMode::AbsoluteYIndex => {
                 let low_byte: u8 = bus.read(self.program_counter)?;
@@ -521,7 +522,7 @@ impl<T: Bus> MOS6502<T> {
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
                 let address = u16::from_le_bytes([low_byte, high_byte]);
-                Ok(OpcodeOperand::Address(address))
+                Ok(OpcodeOperand::AddressWithOverflow(address, overflow))
             }
             AddressingMode::Immediate => {
                 let byte: u8 = bus.read(self.program_counter)?;
@@ -566,7 +567,10 @@ impl<T: Bus> MOS6502<T> {
                 let (low_byte, overflow) = low_byte.overflowing_add(self.y_register);
                 high_byte = high_byte.wrapping_add(overflow as u8);
 
-                let operand = OpcodeOperand::Address(u16::from_le_bytes([low_byte, high_byte]));
+                let operand = OpcodeOperand::AddressWithOverflow(
+                    u16::from_le_bytes([low_byte, high_byte]),
+                    overflow,
+                );
                 Ok(operand)
             }
             AddressingMode::Relative => {
