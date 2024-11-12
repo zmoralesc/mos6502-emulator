@@ -23,7 +23,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Negative, value & NEGATIVE_BIT_MASK != 0);
                 self.flag_set(CpuFlags::Zero, value == 0);
                 bus.write(w, value)?;
-            },
+            }
             OpcodeOperand::AddressWithOverflow(w, _) => {
                 let mut value = bus.read(w)?;
                 self.flag_set(CpuFlags::Carry, value & NEGATIVE_BIT_MASK != 0);
@@ -56,7 +56,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Zero, value == 0);
                 self.flag_set(CpuFlags::Carry, bit0_is_set);
                 bus.write(w, value)?;
-            },
+            }
             OpcodeOperand::AddressWithOverflow(w, _) => {
                 let mut value = bus.read(w)?;
                 let bit0_is_set = value & 1 != 0;
@@ -96,7 +96,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Zero, new_value == 0);
                 self.flag_set(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
                 bus.write(w, new_value)?;
-            },
+            }
             OpcodeOperand::AddressWithOverflow(w, _) => {
                 let value = bus.read(w)?;
                 let bit7_is_set = value & NEGATIVE_BIT_MASK != 0;
@@ -136,7 +136,7 @@ impl<T: Bus> MOS6502<T> {
                 self.flag_set(CpuFlags::Zero, new_value == 0);
                 self.flag_set(CpuFlags::Negative, new_value & NEGATIVE_BIT_MASK != 0);
                 bus.write(w, new_value)?;
-            },
+            }
             OpcodeOperand::AddressWithOverflow(w, _) => {
                 let value = bus.read(w)?;
                 let bit0_is_set = value & 1 == 1;
