@@ -48,7 +48,7 @@ impl Bus for SimpleBus {
             *byte = value;
             Ok(())
         } else {
-            Err(BusError::InvalidRead(address))
+            Err(BusError::InvalidWrite(address))
         }
     }
 }
