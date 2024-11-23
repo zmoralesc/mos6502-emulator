@@ -463,6 +463,7 @@ impl<T: Bus> MOS6502<T> {
     }
 
     /// Step over one CPU instruction
+    #[inline]
     pub fn step(&mut self, bus: &mut T) -> Result<u32, CpuError> {
         let opcode = bus.read(self.program_counter)? as usize;
         self.increment_program_counter(1);
