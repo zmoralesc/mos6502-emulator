@@ -7,7 +7,7 @@ MOS 6502 processor emulator for learning purposes.
 - Passes [Klaus Dormann's functional test](https://github.com/Klaus2m5/6502_65C02_functional_tests) with decimal mode disabled.
 - NMIs and IRQs work as expected (also tested with Klaus Dormann's test suite).
 
-# What's missing' #
+# What's missing #
 - Decimal mode.
 - All undocumented/illegal opcodes.
 
@@ -79,14 +79,15 @@ fn main() -> Result<(), CpuError> {
     cpu.set_program_counter(start_address);
 
     let mut total_cycles = 0;
-    // Step through the program, stopping when the BRK instruction is reached
-    while bus.read(cpu.program_counter())? != 0x00 {
-        // If next opcode is ADC, read and display the value at $0020
-        if bus.read(cpu.program_counter())? == 0x69 {
-            let value_at_0020 = bus.read(0x0020)?;
-            println!("Value at $0020: {:#04X}", value_at_0020);
+    loop {
+        match bus.read(cpu.program_counter())? {
+            // If next opcode is BRK, stop
+            0x00 => break,
+            // If next opcode is ADC, read and display the value at $0020
+            0x69 => println!("Value at $0020: {:#04X}", bus.read(0x0020)?),
+            // Otherwise, step through the program
+            _ => total_cycles += cpu.step(&mut bus)?,
         }
-        total_cycles += cpu.step(&mut bus)?;
     }
 
     // Final value at $0020
