@@ -2,3 +2,4 @@
 .vscode
 print_opcode_array.py
 6502_opcodes.txt
+6502_65C02_functional_tests/*
