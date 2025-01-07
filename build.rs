@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    env::set_current_dir("6502_65C02_functional_tests").unwrap();
+    env::set_current_dir("6502_65C02_functional_tests").expect("Failed to change directory");
 
     let build_test_binary = |path: &Path| {
         Command::new("./as65.exe")
@@ -27,11 +27,11 @@ fn main() {
         let checksum = Command::new("sha1sum")
             .arg(path)
             .output()
-            .expect("Failed to run sed");
+            .expect("Failed to run sha1sum");
         String::from_utf8_lossy(&checksum.stdout)
             .split(" ")
-            .nth(0)
-            .unwrap()
+            .next()
+            .expect("Couldn't get sha1sum string")
             .to_string()
     };
 
