@@ -23,6 +23,17 @@ fn main() {
             .output()
             .expect("Failed to run sed");
     };
+    let get_sha1 = |path: &Path| -> String {
+        let checksum = Command::new("sha1sum")
+            .arg(path)
+            .output()
+            .expect("Failed to run sed");
+        String::from_utf8_lossy(&checksum.stdout)
+            .split(" ")
+            .nth(0)
+            .unwrap()
+            .to_string()
+    };
 
     // Extract as65_142.zip
     let zip_path = Path::new("as65_142.zip");
@@ -33,18 +44,22 @@ fn main() {
 
     // Assemble functional test
     let functional_test_source = Path::new("6502_functional_test.a65");
-    run_sed(
-        functional_test_source,
-        r"s/zero_page = $a/zero_page = $0/;s/disable_decimal = 0/disable_decimal = 1/",
-    );
+    if get_sha1(functional_test_source) != "7b1181d8b7da846aedcbf31da7b6d2a38b9c9f2e" {
+        run_sed(
+            functional_test_source,
+            r"s/zero_page = $a/zero_page = $0/;s/disable_decimal = 0/disable_decimal = 1/",
+        );
+    }
     build_test_binary(functional_test_source);
 
     // Assemble interrupt test
     let interrupt_test_source = Path::new("6502_interrupt_test.a65");
-    run_sed(
-        interrupt_test_source,
-        r"s/zero_page = $a/zero_page = $0/;s/I_drive     = 1/I_drive     = 0/",
-    );
+    if get_sha1(interrupt_test_source) != "ac34dba4de1849d9ba6ad610c570831f5ae87d43" {
+        run_sed(
+            interrupt_test_source,
+            r"s/zero_page = $a/zero_page = $0/;s/I_drive     = 1/I_drive     = 0/",
+        );
+    }
     build_test_binary(interrupt_test_source);
 
     println!("cargo:rerun-if-changed=build.rs");
