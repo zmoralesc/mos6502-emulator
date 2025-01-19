@@ -3,20 +3,25 @@ pub mod mos6502;
 
 #[cfg(test)]
 mod tests {
-    use crate::error;
+    use crate::error::BusError;
     use crate::mos6502;
     use mos6502::*;
 
-    struct TestBus([u8; 65536]);
+    struct TestBus(Vec<u8>);
 
     impl Bus for TestBus {
-        fn read(&mut self, address: u16) -> Result<u8, error::BusError> {
-            Ok(self.0[address as usize])
+        fn read(&mut self, address: u16) -> Result<u8, BusError> {
+            self.0
+                .get(address as usize)
+                .copied()
+                .ok_or(BusError::InvalidRead(address))
         }
 
-        fn write(&mut self, address: u16, value: u8) -> Result<(), error::BusError> {
-            self.0[address as usize] = value;
-            Ok(())
+        fn write(&mut self, address: u16, value: u8) -> Result<(), BusError> {
+            self.0
+                .get_mut(address as usize)
+                .map(|v| *v = value)
+                .ok_or(BusError::InvalidWrite(address))
         }
     }
 
@@ -25,12 +30,7 @@ mod tests {
         let test_bin_path = "6502_65C02_functional_tests/6502_functional_test.bin";
         let test_data = std::fs::read(test_bin_path).expect("Failed to load test suite");
 
-        let mut ram = TestBus([0; 65536]);
-        for i in 0..test_data.len() {
-            ram.write(i as u16, test_data[i])
-                .expect("Failed to write test binary to RAM");
-        }
-
+        let mut ram = TestBus(test_data);
         let mut cpu = MOS6502::new();
         cpu.set_program_counter(0x400);
 
@@ -48,12 +48,7 @@ mod tests {
         let test_bin_path = "6502_65C02_functional_tests/6502_interrupt_test.bin";
         let test_data = std::fs::read(test_bin_path).expect("Failed to load test suite");
 
-        let mut ram = TestBus([0; 65536]);
-        for i in 0..test_data.len() {
-            ram.write(i as u16, test_data[i])
-                .expect("Failed to write test binary to RAM");
-        }
-
+        let mut ram = TestBus(test_data);
         let mut cpu = MOS6502::new();
 
         let mut last_pc: u16 = 0;

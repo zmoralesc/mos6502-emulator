@@ -44,12 +44,10 @@ impl Bus for SimpleBus {
     }
 
     fn write(&mut self, address: u16, value: u8) -> Result<(), BusError> {
-        if let Some(byte) = self.0.get_mut(address as usize) {
-            *byte = value;
-            Ok(())
-        } else {
-            Err(BusError::InvalidWrite(address))
-        }
+        self.0
+            .get_mut(address as usize)
+            .map(|v| *v = value)
+            .ok_or(BusError::InvalidWrite(address))
     }
 }
 
