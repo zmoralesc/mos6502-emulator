@@ -94,6 +94,7 @@ pub struct MOS6502<T: Bus> {
 }
 
 impl<T: Bus> Default for OpcodeFunctionArray<T> {
+    #[rustfmt::skip]
     fn default() -> Self {
         OpcodeFunctionArray([
             (MOS6502::brk, AddressingMode::Implied, Cycles::Fixed(7)),              // 00
