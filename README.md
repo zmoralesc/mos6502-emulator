@@ -76,23 +76,18 @@ fn main() -> Result<(), CpuError> {
     let mut cpu = MOS6502::new();
     cpu.set_program_counter(start_address);
 
-    let mut total_cycles = 0;
     loop {
-        match bus.read(cpu.program_counter())? {
-            // If next opcode is BRK, stop
-            0x00 => break,
-            // If next opcode is ADC, read and display the value at $0020
-            0x69 => println!("Value at $0020: {:#04X}", bus.read(0x0020)?),
-            // Otherwise, step through the program
-            _ => total_cycles += cpu.step(&mut bus)?,
+        let pc = cpu.program_counter();
+        let opcode = bus.read(pc)?;
+
+        if opcode == 0x00 {
+            break;
         }
+
+        cpu.step(&mut bus)?;
     }
 
-    // Final value at $0020
-    let final_value = bus.read(0x0020)?;
-    println!("Final value at $0020: {:#04X}", final_value);
-    println!("Total cycles: {}", total_cycles);
-
+    assert_eq!(bus.read(0x0020)?, 0x05);
     Ok(())
 }
 ```

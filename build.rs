@@ -2,6 +2,9 @@ use std::env;
 use std::path::Path;
 use std::process::Command;
 
+const FUNCTIONAL_TEST_SOURCE_HASH: &'static str = "7b1181d8b7da846aedcbf31da7b6d2a38b9c9f2e";
+const INTERRUPT_TEST_SOURCE_HASH: &'static str = "ac34dba4de1849d9ba6ad610c570831f5ae87d43";
+
 fn main() {
     env::set_current_dir("6502_65C02_functional_tests").expect("Failed to change directory");
 
@@ -44,7 +47,7 @@ fn main() {
 
     // Assemble functional test
     let functional_test_source = Path::new("6502_functional_test.a65");
-    if get_sha1(functional_test_source) != "7b1181d8b7da846aedcbf31da7b6d2a38b9c9f2e" {
+    if get_sha1(functional_test_source) != FUNCTIONAL_TEST_SOURCE_HASH {
         run_sed(
             functional_test_source,
             r"s/zero_page = $a/zero_page = $0/;s/disable_decimal = 0/disable_decimal = 1/",
@@ -54,7 +57,7 @@ fn main() {
 
     // Assemble interrupt test
     let interrupt_test_source = Path::new("6502_interrupt_test.a65");
-    if get_sha1(interrupt_test_source) != "ac34dba4de1849d9ba6ad610c570831f5ae87d43" {
+    if get_sha1(interrupt_test_source) != INTERRUPT_TEST_SOURCE_HASH {
         run_sed(
             interrupt_test_source,
             r"s/zero_page = $a/zero_page = $0/;s/I_drive     = 1/I_drive     = 0/",
