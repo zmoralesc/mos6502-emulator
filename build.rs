@@ -9,7 +9,7 @@ fn main() {
     env::set_current_dir("6502_65C02_functional_tests").expect("Failed to change directory");
 
     let build_test_binary = |path: &Path| {
-        Command::new("./as65.exe")
+        Command::new("./as65")
             .arg("-l")
             .arg("-m")
             .arg("-w")
