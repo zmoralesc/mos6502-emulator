@@ -1,4 +1,4 @@
-# MOS 6502 Emulator
+# MOS 6502 Emulator #
 
 MOS 6502 processor emulator for learning purposes.
 
@@ -26,7 +26,7 @@ use mos6502_emulator::{
 };
 
 // Define a type to represent your bus
-pub struct SimpleBus([u8; 65536]);
+struct SimpleBus(pub [u8; 65536]);
 
 impl SimpleBus {
     pub fn new() -> Self {
@@ -68,14 +68,14 @@ fn main() -> Result<(), CpuError> {
     ];
 
     let start_address = 0x8000;
-    for (i, &byte) in program.iter().enumerate() {
-        bus.write(start_address + i as u16, byte)?;
-    }
+    // Copy program onto bus
+    bus.0[start_address..start_address + program.len()].copy_from_slice(&program);
 
     // Create the CPU and set the program counter
     let mut cpu = MOS6502::new();
-    cpu.set_program_counter(start_address);
+    cpu.set_program_counter(start_address as u16);
 
+    assert_eq!(bus.read(0x0020)?, 0x00);
     loop {
         let pc = cpu.program_counter();
         let opcode = bus.read(pc)?;
